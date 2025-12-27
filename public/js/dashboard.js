@@ -557,7 +557,6 @@ function generateCreditorStatementHTML(creditor) {
             <div class="print-statement" id="printable-statement">
                 <div class="letterhead">
                     <h2>RELEVÉ DE CONFIRMATION DE DETTE</h2>
-                    <p>Al-Wasiyyah Gestion de Succession</p>
                 </div>
                 <div class="date-line"><strong>Date:</strong> ${today}</div>
                 <div class="recipient">
@@ -607,10 +606,6 @@ function generateCreditorStatementHTML(creditor) {
                     <p style="margin-top: 1rem;"><strong>Date:</strong> <span class="sig-line"></span></p>
                     <p style="margin-top: 1rem;"><strong>Numéro de téléphone:</strong> <span class="sig-line"></span></p>
                 </div>
-                <div style="margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #ccc; font-size: 0.85rem; color: #666;">
-                    <p><em>Ce document est généré à des fins de planification successorale dans le cadre de la préparation d'un testament islamique (Al-Wasiyyah). 
-                    Veuillez retourner la copie signée au testateur ou à son exécuteur désigné.</em></p>
-                </div>
             </div>
         `;
     }
@@ -620,7 +615,6 @@ function generateCreditorStatementHTML(creditor) {
         <div class="print-statement" id="printable-statement">
             <div class="letterhead">
                 <h2>DEBT CONFIRMATION STATEMENT</h2>
-                <p>Al-Wasiyyah Estate Management</p>
             </div>
             <div class="date-line"><strong>Date:</strong> ${today}</div>
             <div class="recipient">
@@ -670,10 +664,6 @@ function generateCreditorStatementHTML(creditor) {
                 <p style="margin-top: 1rem;"><strong>Date:</strong> <span class="sig-line"></span></p>
                 <p style="margin-top: 1rem;"><strong>Contact Number:</strong> <span class="sig-line"></span></p>
             </div>
-            <div style="margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #ccc; font-size: 0.85rem; color: #666;">
-                <p><em>This document is generated for estate planning purposes as part of the preparation of an Islamic Will (Al-Wasiyyah). 
-                Please return the signed copy to the testator or their designated executor.</em></p>
-            </div>
         </div>
     `;
 }
@@ -692,7 +682,6 @@ function generateDebtorStatementHTML(debtor) {
             <div class="print-statement" id="printable-statement">
                 <div class="letterhead">
                     <h2>RELEVÉ DE CONFIRMATION DE CRÉANCE</h2>
-                    <p>Al-Wasiyyah Gestion de Succession</p>
                 </div>
                 <div class="date-line"><strong>Date:</strong> ${today}</div>
                 <div class="recipient">
@@ -742,10 +731,6 @@ function generateDebtorStatementHTML(debtor) {
                     <p style="margin-top: 1rem;"><strong>Date:</strong> <span class="sig-line"></span></p>
                     <p style="margin-top: 1rem;"><strong>Numéro de téléphone:</strong> <span class="sig-line"></span></p>
                 </div>
-                <div style="margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #ccc; font-size: 0.85rem; color: #666;">
-                    <p><em>Ce document est généré à des fins de planification successorale dans le cadre de la préparation d'un testament islamique (Al-Wasiyyah). 
-                    Veuillez retourner la copie signée au testateur ou à son exécuteur désigné.</em></p>
-                </div>
             </div>
         `;
     }
@@ -755,7 +740,6 @@ function generateDebtorStatementHTML(debtor) {
         <div class="print-statement" id="printable-statement">
             <div class="letterhead">
                 <h2>DEBT CONFIRMATION STATEMENT</h2>
-                <p>Al-Wasiyyah Estate Management</p>
             </div>
             <div class="date-line"><strong>Date:</strong> ${today}</div>
             <div class="recipient">
@@ -804,10 +788,6 @@ function generateDebtorStatementHTML(debtor) {
                 <p><strong>Debtor's Signature:</strong> <span class="sig-line"></span></p>
                 <p style="margin-top: 1rem;"><strong>Date:</strong> <span class="sig-line"></span></p>
                 <p style="margin-top: 1rem;"><strong>Contact Number:</strong> <span class="sig-line"></span></p>
-            </div>
-            <div style="margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #ccc; font-size: 0.85rem; color: #666;">
-                <p><em>This document is generated for estate planning purposes as part of the preparation of an Islamic Will (Al-Wasiyyah). 
-                Please return the signed copy to the testator or their designated executor.</em></p>
             </div>
         </div>
     `;
