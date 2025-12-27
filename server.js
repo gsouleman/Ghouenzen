@@ -73,7 +73,9 @@ async function initDB() {
                 contact VARCHAR(255),
                 reason TEXT,
                 amount DECIMAL(15,2) DEFAULT 0,
-                notes TEXT
+                notes TEXT,
+                gender VARCHAR(10) DEFAULT 'male',
+                language VARCHAR(10) DEFAULT 'english'
             )
         `);
 
@@ -85,7 +87,9 @@ async function initDB() {
                 contact VARCHAR(255),
                 reason TEXT,
                 amount DECIMAL(15,2) DEFAULT 0,
-                notes TEXT
+                notes TEXT,
+                gender VARCHAR(10) DEFAULT 'male',
+                language VARCHAR(10) DEFAULT 'english'
             )
         `);
 
@@ -284,10 +288,10 @@ app.post('/api/debtors', async (req, res) => {
     try {
         const testator = await getCurrentTestator();
         if (!testator) return res.status(400).json({ error: 'No testator' });
-        const { full_name, contact, reason, amount, notes } = req.body;
+        const { full_name, contact, reason, amount, notes, gender, language } = req.body;
         const result = await pool.query(
-            'INSERT INTO debtors (testator_id, full_name, contact, reason, amount, notes) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
-            [testator.id, full_name, contact || '', reason || '', amount || 0, notes || '']
+            'INSERT INTO debtors (testator_id, full_name, contact, reason, amount, notes, gender, language) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id',
+            [testator.id, full_name, contact || '', reason || '', amount || 0, notes || '', gender || 'male', language || 'english']
         );
         res.json({ id: result.rows[0].id, message: 'Debtor added' });
     } catch (err) {
@@ -297,10 +301,10 @@ app.post('/api/debtors', async (req, res) => {
 
 app.put('/api/debtors/:id', async (req, res) => {
     try {
-        const { full_name, contact, reason, amount, notes } = req.body;
+        const { full_name, contact, reason, amount, notes, gender, language } = req.body;
         await pool.query(
-            'UPDATE debtors SET full_name = $1, contact = $2, reason = $3, amount = $4, notes = $5 WHERE id = $6',
-            [full_name, contact || '', reason || '', amount || 0, notes || '', req.params.id]
+            'UPDATE debtors SET full_name = $1, contact = $2, reason = $3, amount = $4, notes = $5, gender = $6, language = $7 WHERE id = $8',
+            [full_name, contact || '', reason || '', amount || 0, notes || '', gender || 'male', language || 'english', req.params.id]
         );
         res.json({ message: 'Debtor updated' });
     } catch (err) {
@@ -333,10 +337,10 @@ app.post('/api/creditors', async (req, res) => {
     try {
         const testator = await getCurrentTestator();
         if (!testator) return res.status(400).json({ error: 'No testator' });
-        const { full_name, contact, reason, amount, notes } = req.body;
+        const { full_name, contact, reason, amount, notes, gender, language } = req.body;
         const result = await pool.query(
-            'INSERT INTO creditors (testator_id, full_name, contact, reason, amount, notes) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
-            [testator.id, full_name, contact || '', reason || '', amount || 0, notes || '']
+            'INSERT INTO creditors (testator_id, full_name, contact, reason, amount, notes, gender, language) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id',
+            [testator.id, full_name, contact || '', reason || '', amount || 0, notes || '', gender || 'male', language || 'english']
         );
         res.json({ id: result.rows[0].id, message: 'Creditor added' });
     } catch (err) {
@@ -346,10 +350,10 @@ app.post('/api/creditors', async (req, res) => {
 
 app.put('/api/creditors/:id', async (req, res) => {
     try {
-        const { full_name, contact, reason, amount, notes } = req.body;
+        const { full_name, contact, reason, amount, notes, gender, language } = req.body;
         await pool.query(
-            'UPDATE creditors SET full_name = $1, contact = $2, reason = $3, amount = $4, notes = $5 WHERE id = $6',
-            [full_name, contact || '', reason || '', amount || 0, notes || '', req.params.id]
+            'UPDATE creditors SET full_name = $1, contact = $2, reason = $3, amount = $4, notes = $5, gender = $6, language = $7 WHERE id = $8',
+            [full_name, contact || '', reason || '', amount || 0, notes || '', gender || 'male', language || 'english', req.params.id]
         );
         res.json({ message: 'Creditor updated' });
     } catch (err) {

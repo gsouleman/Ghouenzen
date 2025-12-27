@@ -3,6 +3,7 @@
 let testatorId = null;
 let testatorData = {};
 let creditorsData = [];
+let debtorsData = [];
 
 document.addEventListener('DOMContentLoaded', () => {
     initTabs();
@@ -146,9 +147,10 @@ async function loadExecutors() {
 async function loadDebtors() {
     try {
         const debtors = await apiGet('/api/debtors');
+        debtorsData = debtors;
         const tbody = document.getElementById('debtors-tbody');
         if (debtors.length === 0) {
-            tbody.innerHTML = '<tr class="empty-row"><td colspan="4">No debtors registered</td></tr>';
+            tbody.innerHTML = '<tr class="empty-row"><td colspan="5">No debtors registered</td></tr>';
             document.getElementById('debtors-total').textContent = '0 XAF';
             return;
         }
@@ -157,6 +159,10 @@ async function loadDebtors() {
                 <td>${d.full_name}</td>
                 <td>${d.reason || '-'}</td>
                 <td>${formatCurrency(d.amount)}</td>
+                <td>
+                    <button class="stmt-btn view" onclick="viewDebtorStatement(${d.id})">👁 View</button>
+                    <button class="stmt-btn print" onclick="printDebtorStatement(${d.id})">🖨 Print</button>
+                </td>
                 <td>
                     <button class="action-btn edit" onclick='editDebtor(${JSON.stringify(d)})'>Edit</button>
                     <button class="action-btn delete" onclick="deleteItem('debtors', ${d.id})">Delete</button>
@@ -264,6 +270,21 @@ function showModal(type, data = null) {
         </form>`,
         debtor: `<form id="modal-form" class="form">
             <div class="form-group"><label>Full Name</label><input type="text" id="f-name" required></div>
+            <div class="form-row">
+                <div class="form-group"><label>Gender</label>
+                    <select id="f-gender">
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                    </select>
+                </div>
+                <div class="form-group"><label>Language</label>
+                    <select id="f-language">
+                        <option value="english">English</option>
+                        <option value="french">French</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group"><label>Contact</label><input type="text" id="f-contact"></div>
             <div class="form-group"><label>Reason</label><input type="text" id="f-reason"></div>
             <div class="form-group"><label>Amount (XAF)</label><input type="number" id="f-amount" required></div>
             <div class="form-group"><label>Notes</label><textarea id="f-notes" rows="2"></textarea></div>
@@ -271,6 +292,21 @@ function showModal(type, data = null) {
         </form>`,
         creditor: `<form id="modal-form" class="form">
             <div class="form-group"><label>Name</label><input type="text" id="f-name" required></div>
+            <div class="form-row">
+                <div class="form-group"><label>Gender</label>
+                    <select id="f-gender">
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                    </select>
+                </div>
+                <div class="form-group"><label>Language</label>
+                    <select id="f-language">
+                        <option value="english">English</option>
+                        <option value="french">French</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group"><label>Contact</label><input type="text" id="f-contact"></div>
             <div class="form-group"><label>Reason</label><input type="text" id="f-reason"></div>
             <div class="form-group"><label>Amount (XAF)</label><input type="number" id="f-amount" required></div>
             <div class="form-group"><label>Notes</label><textarea id="f-notes" rows="2"></textarea></div>
@@ -318,6 +354,9 @@ function fillForm(type, data) {
         case 'debtor':
         case 'creditor':
             document.getElementById('f-name').value = data.full_name;
+            document.getElementById('f-gender').value = data.gender || 'male';
+            document.getElementById('f-language').value = data.language || 'english';
+            document.getElementById('f-contact').value = data.contact || '';
             document.getElementById('f-reason').value = data.reason || '';
             document.getElementById('f-amount').value = data.amount;
             document.getElementById('f-notes').value = data.notes || '';
@@ -346,7 +385,15 @@ async function handleSubmit(e, type, id) {
             break;
         case 'debtor':
         case 'creditor':
-            data = { full_name: document.getElementById('f-name').value, reason: document.getElementById('f-reason').value, amount: parseFloat(document.getElementById('f-amount').value) || 0, notes: document.getElementById('f-notes').value };
+            data = { 
+                full_name: document.getElementById('f-name').value, 
+                gender: document.getElementById('f-gender').value,
+                language: document.getElementById('f-language').value,
+                contact: document.getElementById('f-contact').value,
+                reason: document.getElementById('f-reason').value, 
+                amount: parseFloat(document.getElementById('f-amount').value) || 0, 
+                notes: document.getElementById('f-notes').value 
+            };
             break;
         case 'asset':
             data = { category: document.getElementById('f-category').value, description: document.getElementById('f-description').value, location: document.getElementById('f-location').value, estimated_value: parseFloat(document.getElementById('f-value').value) || 0, notes: document.getElementById('f-notes').value };
@@ -390,7 +437,7 @@ document.addEventListener('keydown', (e) => {
 });
 
 // ============================================
-// CREDITOR STATEMENT FUNCTIONS
+// STATEMENT FUNCTIONS (CREDITORS & DEBTORS)
 // ============================================
 
 function formatCurrencyXAF(amount) {
@@ -398,7 +445,7 @@ function formatCurrencyXAF(amount) {
     return new Intl.NumberFormat('en-US').format(Math.round(amount)) + ' XAF';
 }
 
-function numberToWords(num) {
+function numberToWordsEnglish(num) {
     if (num === 0) return 'zero';
     
     const ones = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine',
@@ -431,93 +478,198 @@ function numberToWords(num) {
     return result.trim();
 }
 
-function generateStatementHTML(creditor) {
-    const today = new Date().toLocaleDateString('en-GB', {
+function numberToWordsFrench(num) {
+    if (num === 0) return 'zéro';
+    
+    const ones = ['', 'un', 'deux', 'trois', 'quatre', 'cinq', 'six', 'sept', 'huit', 'neuf',
+                 'dix', 'onze', 'douze', 'treize', 'quatorze', 'quinze', 'seize',
+                 'dix-sept', 'dix-huit', 'dix-neuf'];
+    const tens = ['', '', 'vingt', 'trente', 'quarante', 'cinquante', 'soixante', 'soixante', 'quatre-vingt', 'quatre-vingt'];
+
+    function convertGroup(n) {
+        if (n === 0) return '';
+        if (n < 20) return ones[n];
+        if (n < 70) return tens[Math.floor(n / 10)] + (n % 10 ? '-' + ones[n % 10] : '');
+        if (n < 80) return 'soixante-' + ones[n - 60];
+        if (n < 100) return 'quatre-vingt' + (n === 80 ? 's' : '-' + ones[n - 80]);
+        if (n < 200) return 'cent' + (n > 100 ? ' ' + convertGroup(n - 100) : '');
+        return ones[Math.floor(n / 100)] + ' cent' + (n % 100 ? ' ' + convertGroup(n % 100) : 's');
+    }
+
+    let result = '';
+    num = Math.abs(Math.round(num));
+
+    if (num >= 1000000000) {
+        const billions = Math.floor(num / 1000000000);
+        result += (billions === 1 ? 'un milliard' : convertGroup(billions) + ' milliards');
+        num %= 1000000000;
+        if (num > 0) result += ' ';
+    }
+    if (num >= 1000000) {
+        const millions = Math.floor(num / 1000000);
+        result += (millions === 1 ? 'un million' : convertGroup(millions) + ' millions');
+        num %= 1000000;
+        if (num > 0) result += ' ';
+    }
+    if (num >= 1000) {
+        const thousands = Math.floor(num / 1000);
+        result += (thousands === 1 ? 'mille' : convertGroup(thousands) + ' mille');
+        num %= 1000;
+        if (num > 0) result += ' ';
+    }
+    if (num > 0) {
+        result += convertGroup(num);
+    }
+
+    return result.trim();
+}
+
+function getTitle(gender, language) {
+    if (language === 'french') {
+        return gender === 'female' ? 'Mme ' : 'M. ';
+    }
+    return gender === 'female' ? 'Mrs. ' : 'Mr. ';
+}
+
+function getDateFormatted(language) {
+    const today = new Date();
+    if (language === 'french') {
+        return today.toLocaleDateString('fr-FR', {
+            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+        });
+    }
+    return today.toLocaleDateString('en-GB', {
         weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
     });
+}
 
+function generateCreditorStatementHTML(creditor) {
+    const lang = creditor.language || 'english';
+    const gender = creditor.gender || 'male';
+    const today = getDateFormatted(lang);
+    const title = getTitle(gender, lang);
     const amountNumeric = formatCurrencyXAF(creditor.amount);
-    const amountWords = numberToWords(creditor.amount);
-    const amountWordsFormatted = amountWords.charAt(0).toUpperCase() + amountWords.slice(1) + ' CFA Francs';
-    
-    const title = creditor.full_name.toUpperCase().startsWith('MR') || 
-                  creditor.full_name.toUpperCase().startsWith('MRS') || 
-                  creditor.full_name.toUpperCase().startsWith('MS') ? '' : 'Mr./Mrs. ';
+    const amountWords = lang === 'french' ? numberToWordsFrench(creditor.amount) : numberToWordsEnglish(creditor.amount);
+    const amountWordsFormatted = amountWords.charAt(0).toUpperCase() + amountWords.slice(1) + (lang === 'french' ? ' Francs CFA' : ' CFA Francs');
 
+    if (lang === 'french') {
+        return `
+            <div class="print-statement" id="printable-statement">
+                <div class="letterhead">
+                    <h2>RELEVÉ DE CONFIRMATION DE DETTE</h2>
+                    <p>Al-Wasiyyah Gestion de Succession</p>
+                </div>
+                <div class="date-line"><strong>Date:</strong> ${today}</div>
+                <div class="recipient">
+                    <p><strong>À:</strong> ${title}${creditor.full_name}</p>
+                    ${creditor.contact ? `<p><strong>Contact:</strong> ${creditor.contact}</p>` : ''}
+                </div>
+                <div class="subject">Objet: Confirmation de dette impayée</div>
+                <div class="body-text">
+                    <p>Cher/Chère ${title}${creditor.full_name},</p>
+                    <p>Ceci représente ce que je dois à ${title}${creditor.full_name} à la date du (${today}).</p>
+                    <p>Cette lettre constitue une reconnaissance formelle de la dette que je, 
+                    <strong>${testatorData.full_name || '[Nom du Testateur]'}</strong>, 
+                    résidant à <strong>${testatorData.address || '[Adresse]'}</strong>, 
+                    vous dois à la date indiquée ci-dessus.</p>
+                    ${creditor.reason ? `<p><strong>Motif de la dette:</strong> ${creditor.reason}</p>` : ''}
+                </div>
+                <div class="amount-box">
+                    <p><strong>Montant dû:</strong></p>
+                    <p class="amount-numeric">${amountNumeric}</p>
+                    <p class="amount-words">(${amountWordsFormatted} seulement)</p>
+                </div>
+                <div class="body-text">
+                    <p>Je vous prie de bien vouloir vérifier ce relevé et confirmer son exactitude. 
+                    S'il y a des écarts, des omissions ou des montants supplémentaires à inclure, 
+                    veuillez les indiquer dans la section ci-dessous.</p>
+                </div>
+                <div class="confirmation-box">
+                    <h4>CONFIRMATION DU CRÉANCIER</h4>
+                    <p>Veuillez cocher la case appropriée et signer ci-dessous:</p>
+                    <div class="confirm-line">
+                        <span class="confirm-checkbox"></span>
+                        <span>Je confirme que le montant indiqué ci-dessus (<strong>${amountNumeric}</strong>) est correct et complet.</span>
+                    </div>
+                    <div class="confirm-line">
+                        <span class="confirm-checkbox"></span>
+                        <span>Le montant indiqué est incorrect. Le montant correct est: __________________ XAF</span>
+                    </div>
+                    <div class="confirm-line">
+                        <span class="confirm-checkbox"></span>
+                        <span>Il y a des montants/éléments supplémentaires non inclus. Détails: </span>
+                    </div>
+                    <p style="border-bottom: 1px solid #333; min-height: 60px; margin-top: 0.5rem;"></p>
+                    ${creditor.notes ? `<p style="margin-top: 1rem;"><strong>Notes supplémentaires du débiteur:</strong> ${creditor.notes}</p>` : ''}
+                </div>
+                <div class="signature-area">
+                    <p><strong>Signature du créancier:</strong> <span class="sig-line"></span></p>
+                    <p style="margin-top: 1rem;"><strong>Date:</strong> <span class="sig-line"></span></p>
+                    <p style="margin-top: 1rem;"><strong>Numéro de téléphone:</strong> <span class="sig-line"></span></p>
+                </div>
+                <div style="margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #ccc; font-size: 0.85rem; color: #666;">
+                    <p><em>Ce document est généré à des fins de planification successorale dans le cadre de la préparation d'un testament islamique (Al-Wasiyyah). 
+                    Veuillez retourner la copie signée au testateur ou à son exécuteur désigné.</em></p>
+                </div>
+            </div>
+        `;
+    }
+
+    // English version
     return `
         <div class="print-statement" id="printable-statement">
             <div class="letterhead">
                 <h2>DEBT CONFIRMATION STATEMENT</h2>
                 <p>Al-Wasiyyah Estate Management</p>
             </div>
-
-            <div class="date-line">
-                <strong>Date:</strong> ${today}
-            </div>
-
+            <div class="date-line"><strong>Date:</strong> ${today}</div>
             <div class="recipient">
                 <p><strong>To:</strong> ${title}${creditor.full_name}</p>
                 ${creditor.contact ? `<p><strong>Contact:</strong> ${creditor.contact}</p>` : ''}
             </div>
-
-            <div class="subject">
-                Subject: Confirmation of Outstanding Debt
-            </div>
-
+            <div class="subject">Subject: Confirmation of Outstanding Debt</div>
             <div class="body-text">
                 <p>Dear ${title}${creditor.full_name},</p>
-                
                 <p>This is what I owe to ${title}${creditor.full_name} as of this date (${today}).</p>
-
                 <p>This letter serves as a formal acknowledgment and statement of the debt that I, 
                 <strong>${testatorData.full_name || '[Testator Name]'}</strong>, 
                 residing at <strong>${testatorData.address || '[Address]'}</strong>, 
                 owe to you as of the date indicated above.</p>
-
                 ${creditor.reason ? `<p><strong>Reason for debt:</strong> ${creditor.reason}</p>` : ''}
             </div>
-
             <div class="amount-box">
                 <p><strong>Amount Owed:</strong></p>
                 <p class="amount-numeric">${amountNumeric}</p>
                 <p class="amount-words">(${amountWordsFormatted} Only)</p>
             </div>
-
             <div class="body-text">
                 <p>I kindly request that you review this statement and confirm its accuracy. 
                 If there are any discrepancies, omissions, or additional amounts that should be included, 
                 please indicate them in the section below.</p>
             </div>
-
             <div class="confirmation-box">
                 <h4>CREDITOR'S CONFIRMATION</h4>
                 <p>Please tick the appropriate box and sign below:</p>
-                
                 <div class="confirm-line">
                     <span class="confirm-checkbox"></span>
                     <span>I confirm that the amount stated above (<strong>${amountNumeric}</strong>) is correct and complete.</span>
                 </div>
-                
                 <div class="confirm-line">
                     <span class="confirm-checkbox"></span>
                     <span>The amount stated is incorrect. The correct amount is: __________________ XAF</span>
                 </div>
-                
                 <div class="confirm-line">
                     <span class="confirm-checkbox"></span>
                     <span>There are additional amounts/items not included. Details: </span>
                 </div>
                 <p style="border-bottom: 1px solid #333; min-height: 60px; margin-top: 0.5rem;"></p>
-
                 ${creditor.notes ? `<p style="margin-top: 1rem;"><strong>Additional Notes from Debtor:</strong> ${creditor.notes}</p>` : ''}
             </div>
-
             <div class="signature-area">
                 <p><strong>Creditor's Signature:</strong> <span class="sig-line"></span></p>
                 <p style="margin-top: 1rem;"><strong>Date:</strong> <span class="sig-line"></span></p>
                 <p style="margin-top: 1rem;"><strong>Contact Number:</strong> <span class="sig-line"></span></p>
             </div>
-
             <div style="margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #ccc; font-size: 0.85rem; color: #666;">
                 <p><em>This document is generated for estate planning purposes as part of the preparation of an Islamic Will (Al-Wasiyyah). 
                 Please return the signed copy to the testator or their designated executor.</em></p>
@@ -526,50 +678,196 @@ function generateStatementHTML(creditor) {
     `;
 }
 
+function generateDebtorStatementHTML(debtor) {
+    const lang = debtor.language || 'english';
+    const gender = debtor.gender || 'male';
+    const today = getDateFormatted(lang);
+    const title = getTitle(gender, lang);
+    const amountNumeric = formatCurrencyXAF(debtor.amount);
+    const amountWords = lang === 'french' ? numberToWordsFrench(debtor.amount) : numberToWordsEnglish(debtor.amount);
+    const amountWordsFormatted = amountWords.charAt(0).toUpperCase() + amountWords.slice(1) + (lang === 'french' ? ' Francs CFA' : ' CFA Francs');
+
+    if (lang === 'french') {
+        return `
+            <div class="print-statement" id="printable-statement">
+                <div class="letterhead">
+                    <h2>RELEVÉ DE CONFIRMATION DE CRÉANCE</h2>
+                    <p>Al-Wasiyyah Gestion de Succession</p>
+                </div>
+                <div class="date-line"><strong>Date:</strong> ${today}</div>
+                <div class="recipient">
+                    <p><strong>À:</strong> ${title}${debtor.full_name}</p>
+                    ${debtor.contact ? `<p><strong>Contact:</strong> ${debtor.contact}</p>` : ''}
+                </div>
+                <div class="subject">Objet: Confirmation de créance à recouvrer</div>
+                <div class="body-text">
+                    <p>Cher/Chère ${title}${debtor.full_name},</p>
+                    <p>Ceci représente ce que ${title}${debtor.full_name} me doit à la date du (${today}).</p>
+                    <p>Cette lettre constitue un relevé formel de la créance que ${title}${debtor.full_name} 
+                    doit à moi, <strong>${testatorData.full_name || '[Nom du Testateur]'}</strong>, 
+                    résidant à <strong>${testatorData.address || '[Adresse]'}</strong>, 
+                    à la date indiquée ci-dessus.</p>
+                    ${debtor.reason ? `<p><strong>Motif de la créance:</strong> ${debtor.reason}</p>` : ''}
+                </div>
+                <div class="amount-box">
+                    <p><strong>Montant dû:</strong></p>
+                    <p class="amount-numeric">${amountNumeric}</p>
+                    <p class="amount-words">(${amountWordsFormatted} seulement)</p>
+                </div>
+                <div class="body-text">
+                    <p>Je vous prie de bien vouloir vérifier ce relevé et confirmer son exactitude. 
+                    S'il y a des écarts, des omissions ou des montants supplémentaires à inclure, 
+                    veuillez les indiquer dans la section ci-dessous.</p>
+                </div>
+                <div class="confirmation-box">
+                    <h4>CONFIRMATION DU DÉBITEUR</h4>
+                    <p>Veuillez cocher la case appropriée et signer ci-dessous:</p>
+                    <div class="confirm-line">
+                        <span class="confirm-checkbox"></span>
+                        <span>Je confirme que le montant indiqué ci-dessus (<strong>${amountNumeric}</strong>) est correct et complet.</span>
+                    </div>
+                    <div class="confirm-line">
+                        <span class="confirm-checkbox"></span>
+                        <span>Le montant indiqué est incorrect. Le montant correct est: __________________ XAF</span>
+                    </div>
+                    <div class="confirm-line">
+                        <span class="confirm-checkbox"></span>
+                        <span>Il y a des montants/éléments supplémentaires non inclus. Détails: </span>
+                    </div>
+                    <p style="border-bottom: 1px solid #333; min-height: 60px; margin-top: 0.5rem;"></p>
+                    ${debtor.notes ? `<p style="margin-top: 1rem;"><strong>Notes supplémentaires:</strong> ${debtor.notes}</p>` : ''}
+                </div>
+                <div class="signature-area">
+                    <p><strong>Signature du débiteur:</strong> <span class="sig-line"></span></p>
+                    <p style="margin-top: 1rem;"><strong>Date:</strong> <span class="sig-line"></span></p>
+                    <p style="margin-top: 1rem;"><strong>Numéro de téléphone:</strong> <span class="sig-line"></span></p>
+                </div>
+                <div style="margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #ccc; font-size: 0.85rem; color: #666;">
+                    <p><em>Ce document est généré à des fins de planification successorale dans le cadre de la préparation d'un testament islamique (Al-Wasiyyah). 
+                    Veuillez retourner la copie signée au testateur ou à son exécuteur désigné.</em></p>
+                </div>
+            </div>
+        `;
+    }
+
+    // English version
+    return `
+        <div class="print-statement" id="printable-statement">
+            <div class="letterhead">
+                <h2>DEBT CONFIRMATION STATEMENT</h2>
+                <p>Al-Wasiyyah Estate Management</p>
+            </div>
+            <div class="date-line"><strong>Date:</strong> ${today}</div>
+            <div class="recipient">
+                <p><strong>To:</strong> ${title}${debtor.full_name}</p>
+                ${debtor.contact ? `<p><strong>Contact:</strong> ${debtor.contact}</p>` : ''}
+            </div>
+            <div class="subject">Subject: Confirmation of Outstanding Debt Owed to Estate</div>
+            <div class="body-text">
+                <p>Dear ${title}${debtor.full_name},</p>
+                <p>This is what ${title}${debtor.full_name} owes to me as of this date (${today}).</p>
+                <p>This letter serves as a formal statement of the debt that ${title}${debtor.full_name} 
+                owes to me, <strong>${testatorData.full_name || '[Testator Name]'}</strong>, 
+                residing at <strong>${testatorData.address || '[Address]'}</strong>, 
+                as of the date indicated above.</p>
+                ${debtor.reason ? `<p><strong>Reason for debt:</strong> ${debtor.reason}</p>` : ''}
+            </div>
+            <div class="amount-box">
+                <p><strong>Amount Owed:</strong></p>
+                <p class="amount-numeric">${amountNumeric}</p>
+                <p class="amount-words">(${amountWordsFormatted} Only)</p>
+            </div>
+            <div class="body-text">
+                <p>I kindly request that you review this statement and confirm its accuracy. 
+                If there are any discrepancies, omissions, or additional amounts that should be included, 
+                please indicate them in the section below.</p>
+            </div>
+            <div class="confirmation-box">
+                <h4>DEBTOR'S CONFIRMATION</h4>
+                <p>Please tick the appropriate box and sign below:</p>
+                <div class="confirm-line">
+                    <span class="confirm-checkbox"></span>
+                    <span>I confirm that the amount stated above (<strong>${amountNumeric}</strong>) is correct and complete.</span>
+                </div>
+                <div class="confirm-line">
+                    <span class="confirm-checkbox"></span>
+                    <span>The amount stated is incorrect. The correct amount is: __________________ XAF</span>
+                </div>
+                <div class="confirm-line">
+                    <span class="confirm-checkbox"></span>
+                    <span>There are additional amounts/items not included. Details: </span>
+                </div>
+                <p style="border-bottom: 1px solid #333; min-height: 60px; margin-top: 0.5rem;"></p>
+                ${debtor.notes ? `<p style="margin-top: 1rem;"><strong>Additional Notes:</strong> ${debtor.notes}</p>` : ''}
+            </div>
+            <div class="signature-area">
+                <p><strong>Debtor's Signature:</strong> <span class="sig-line"></span></p>
+                <p style="margin-top: 1rem;"><strong>Date:</strong> <span class="sig-line"></span></p>
+                <p style="margin-top: 1rem;"><strong>Contact Number:</strong> <span class="sig-line"></span></p>
+            </div>
+            <div style="margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #ccc; font-size: 0.85rem; color: #666;">
+                <p><em>This document is generated for estate planning purposes as part of the preparation of an Islamic Will (Al-Wasiyyah). 
+                Please return the signed copy to the testator or their designated executor.</em></p>
+            </div>
+        </div>
+    `;
+}
+
+const printStyles = `
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Outfit', sans-serif; padding: 2rem; line-height: 1.8; color: #1a1a1a; }
+    .letterhead { text-align: center; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 2px solid #1a6b52; }
+    .letterhead h2 { color: #0d4d3a; margin-bottom: 0.25rem; }
+    .date-line { text-align: right; margin-bottom: 2rem; }
+    .recipient { margin-bottom: 2rem; }
+    .subject { font-weight: 600; margin-bottom: 1.5rem; text-decoration: underline; }
+    .body-text { margin-bottom: 1.5rem; text-align: justify; }
+    .amount-box { background: #f5f0e6; padding: 1rem; border-radius: 8px; margin: 1.5rem 0; border-left: 4px solid #c9a227; }
+    .amount-numeric { font-size: 1.25rem; font-weight: 700; color: #0d4d3a; }
+    .amount-words { font-style: italic; color: #4a4a4a; margin-top: 0.5rem; }
+    .confirmation-box { background: #fff9e6; padding: 1.5rem; border: 2px dashed #c9a227; border-radius: 8px; margin: 2rem 0; }
+    .confirmation-box h4 { margin-bottom: 1rem; color: #0d4d3a; }
+    .confirm-line { display: flex; gap: 1rem; margin-bottom: 0.75rem; align-items: flex-start; }
+    .confirm-checkbox { width: 18px; height: 18px; border: 2px solid #1a1a1a; display: inline-block; flex-shrink: 0; margin-top: 4px; }
+    .signature-area { margin-top: 3rem; }
+    .sig-line { border-bottom: 1px solid #1a1a1a; min-width: 200px; display: inline-block; margin-left: 1rem; }
+    @media print { body { padding: 1rem; } }
+`;
+
 function viewCreditorStatement(creditorId) {
     const creditor = creditorsData.find(c => c.id === creditorId);
     if (!creditor) return;
-
-    document.getElementById('statement-body').innerHTML = generateStatementHTML(creditor);
+    document.getElementById('statement-body').innerHTML = generateCreditorStatementHTML(creditor);
     document.getElementById('statement-overlay').classList.add('active');
 }
 
 function printCreditorStatement(creditorId) {
     const creditor = creditorsData.find(c => c.id === creditorId);
     if (!creditor) return;
-
-    const statementHTML = generateStatementHTML(creditor);
+    const statementHTML = generateCreditorStatementHTML(creditor);
     const printWindow = window.open('', '_blank');
-    printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Creditor Statement - ${creditor.full_name}</title>
-            <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-            <style>
-                * { box-sizing: border-box; margin: 0; padding: 0; }
-                body { font-family: 'Outfit', sans-serif; padding: 2rem; line-height: 1.8; color: #1a1a1a; }
-                .letterhead { text-align: center; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 2px solid #1a6b52; }
-                .letterhead h2 { color: #0d4d3a; margin-bottom: 0.25rem; }
-                .date-line { text-align: right; margin-bottom: 2rem; }
-                .recipient { margin-bottom: 2rem; }
-                .subject { font-weight: 600; margin-bottom: 1.5rem; text-decoration: underline; }
-                .body-text { margin-bottom: 1.5rem; text-align: justify; }
-                .amount-box { background: #f5f0e6; padding: 1rem; border-radius: 8px; margin: 1.5rem 0; border-left: 4px solid #c9a227; }
-                .amount-numeric { font-size: 1.25rem; font-weight: 700; color: #0d4d3a; }
-                .amount-words { font-style: italic; color: #4a4a4a; margin-top: 0.5rem; }
-                .confirmation-box { background: #fff9e6; padding: 1.5rem; border: 2px dashed #c9a227; border-radius: 8px; margin: 2rem 0; }
-                .confirmation-box h4 { margin-bottom: 1rem; color: #0d4d3a; }
-                .confirm-line { display: flex; gap: 1rem; margin-bottom: 0.75rem; align-items: flex-start; }
-                .confirm-checkbox { width: 18px; height: 18px; border: 2px solid #1a1a1a; display: inline-block; flex-shrink: 0; margin-top: 4px; }
-                .signature-area { margin-top: 3rem; }
-                .sig-line { border-bottom: 1px solid #1a1a1a; min-width: 200px; display: inline-block; margin-left: 1rem; }
-                @media print { body { padding: 1rem; } }
-            </style>
-        </head>
-        <body>${statementHTML}</body>
-        </html>
-    `);
+    printWindow.document.write(`<!DOCTYPE html><html><head><title>Creditor Statement - ${creditor.full_name}</title>
+        <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+        <style>${printStyles}</style></head><body>${statementHTML}</body></html>`);
+    printWindow.document.close();
+    setTimeout(() => printWindow.print(), 250);
+}
+
+function viewDebtorStatement(debtorId) {
+    const debtor = debtorsData.find(d => d.id === debtorId);
+    if (!debtor) return;
+    document.getElementById('statement-body').innerHTML = generateDebtorStatementHTML(debtor);
+    document.getElementById('statement-overlay').classList.add('active');
+}
+
+function printDebtorStatement(debtorId) {
+    const debtor = debtorsData.find(d => d.id === debtorId);
+    if (!debtor) return;
+    const statementHTML = generateDebtorStatementHTML(debtor);
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`<!DOCTYPE html><html><head><title>Debtor Statement - ${debtor.full_name}</title>
+        <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+        <style>${printStyles}</style></head><body>${statementHTML}</body></html>`);
     printWindow.document.close();
     setTimeout(() => printWindow.print(), 250);
 }

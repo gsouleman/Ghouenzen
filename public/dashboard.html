@@ -9,7 +9,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/style.css">
     <style>
-        /* Creditor Statement Styles */
+        /* Form row for side-by-side fields */
+        .form-row { display: flex; gap: 1rem; }
+        .form-row .form-group { flex: 1; }
+        
+        /* Creditor/Debtor Statement Styles */
         .stmt-btn { padding: 0.25rem 0.5rem; font-size: 0.75rem; border: none; border-radius: 4px; cursor: pointer; margin-right: 4px; }
         .stmt-btn.view { background: #2d8f6f; color: white; }
         .stmt-btn.print { background: #c9a227; color: #1a1a1a; }
@@ -178,13 +182,13 @@
                         <div class="table-wrapper">
                             <table class="data-table">
                                 <thead>
-                                    <tr><th>Name</th><th>Reason</th><th>Amount (XAF)</th><th>Actions</th></tr>
+                                    <tr><th>Name</th><th>Reason</th><th>Amount (XAF)</th><th>Statement</th><th>Actions</th></tr>
                                 </thead>
                                 <tbody id="debtors-tbody">
-                                    <tr class="empty-row"><td colspan="4">No debtors registered</td></tr>
+                                    <tr class="empty-row"><td colspan="5">No debtors registered</td></tr>
                                 </tbody>
                                 <tfoot>
-                                    <tr><td colspan="2"><strong>Total to Collect:</strong></td><td id="debtors-total" class="total-positive">0 XAF</td><td></td></tr>
+                                    <tr><td colspan="2"><strong>Total to Collect:</strong></td><td id="debtors-total" class="total-positive">0 XAF</td><td></td><td></td></tr>
                                 </tfoot>
                             </table>
                         </div>
