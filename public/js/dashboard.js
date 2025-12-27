@@ -1,6 +1,8 @@
 // Al-Wasiyyah - Dashboard JavaScript
 
 let testatorId = null;
+let testatorData = {};
+let creditorsData = [];
 
 document.addEventListener('DOMContentLoaded', () => {
     initTabs();
@@ -48,6 +50,7 @@ async function loadAllData() {
         if (testatorRes.ok) {
             const testator = await testatorRes.json();
             testatorId = testator.id;
+            testatorData = testator;
             document.getElementById('testator-name').value = testator.full_name || '';
             document.getElementById('testator-address').value = testator.address || '';
             document.getElementById('testator-display').textContent = testator.full_name || 'No testator registered';
@@ -167,9 +170,10 @@ async function loadDebtors() {
 async function loadCreditors() {
     try {
         const creditors = await apiGet('/api/creditors');
+        creditorsData = creditors;
         const tbody = document.getElementById('creditors-tbody');
         if (creditors.length === 0) {
-            tbody.innerHTML = '<tr class="empty-row"><td colspan="4">No creditors registered</td></tr>';
+            tbody.innerHTML = '<tr class="empty-row"><td colspan="5">No creditors registered</td></tr>';
             document.getElementById('creditors-total').textContent = '0 XAF';
             return;
         }
@@ -178,6 +182,10 @@ async function loadCreditors() {
                 <td>${c.full_name}</td>
                 <td>${c.reason || '-'}</td>
                 <td>${formatCurrency(c.amount)}</td>
+                <td>
+                    <button class="stmt-btn view" onclick="viewCreditorStatement(${c.id})">👁 View</button>
+                    <button class="stmt-btn print" onclick="printCreditorStatement(${c.id})">🖨 Print</button>
+                </td>
                 <td>
                     <button class="action-btn edit" onclick='editCreditor(${JSON.stringify(c)})'>Edit</button>
                     <button class="action-btn delete" onclick="deleteItem('creditors', ${c.id})">Delete</button>
@@ -375,5 +383,202 @@ document.getElementById('modal-overlay').addEventListener('click', (e) => {
     if (e.target.id === 'modal-overlay') closeModal();
 });
 document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeModal();
+    if (e.key === 'Escape') {
+        closeModal();
+        closeStatement();
+    }
+});
+
+// ============================================
+// CREDITOR STATEMENT FUNCTIONS
+// ============================================
+
+function formatCurrencyXAF(amount) {
+    if (amount === null || amount === undefined || amount === 0) return '0 XAF';
+    return new Intl.NumberFormat('en-US').format(Math.round(amount)) + ' XAF';
+}
+
+function numberToWords(num) {
+    if (num === 0) return 'zero';
+    
+    const ones = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine',
+                 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen',
+                 'seventeen', 'eighteen', 'nineteen'];
+    const tens = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
+    const scales = ['', 'thousand', 'million', 'billion'];
+
+    function convertGroup(n) {
+        if (n === 0) return '';
+        if (n < 20) return ones[n];
+        if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 ? '-' + ones[n % 10] : '');
+        return ones[Math.floor(n / 100)] + ' hundred' + (n % 100 ? ' and ' + convertGroup(n % 100) : '');
+    }
+
+    let result = '';
+    let scaleIndex = 0;
+    num = Math.abs(Math.round(num));
+
+    while (num > 0) {
+        const group = num % 1000;
+        if (group !== 0) {
+            const groupStr = convertGroup(group);
+            result = groupStr + (scales[scaleIndex] ? ' ' + scales[scaleIndex] : '') + (result ? ' ' + result : '');
+        }
+        num = Math.floor(num / 1000);
+        scaleIndex++;
+    }
+
+    return result.trim();
+}
+
+function generateStatementHTML(creditor) {
+    const today = new Date().toLocaleDateString('en-GB', {
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+    });
+
+    const amountNumeric = formatCurrencyXAF(creditor.amount);
+    const amountWords = numberToWords(creditor.amount);
+    const amountWordsFormatted = amountWords.charAt(0).toUpperCase() + amountWords.slice(1) + ' CFA Francs';
+    
+    const title = creditor.full_name.toUpperCase().startsWith('MR') || 
+                  creditor.full_name.toUpperCase().startsWith('MRS') || 
+                  creditor.full_name.toUpperCase().startsWith('MS') ? '' : 'Mr./Mrs. ';
+
+    return `
+        <div class="print-statement" id="printable-statement">
+            <div class="letterhead">
+                <h2>DEBT CONFIRMATION STATEMENT</h2>
+                <p>Al-Wasiyyah Estate Management</p>
+            </div>
+
+            <div class="date-line">
+                <strong>Date:</strong> ${today}
+            </div>
+
+            <div class="recipient">
+                <p><strong>To:</strong> ${title}${creditor.full_name}</p>
+                ${creditor.contact ? `<p><strong>Contact:</strong> ${creditor.contact}</p>` : ''}
+            </div>
+
+            <div class="subject">
+                Subject: Confirmation of Outstanding Debt
+            </div>
+
+            <div class="body-text">
+                <p>Dear ${title}${creditor.full_name},</p>
+                
+                <p>This is what I owe to ${title}${creditor.full_name} as of this date (${today}).</p>
+
+                <p>This letter serves as a formal acknowledgment and statement of the debt that I, 
+                <strong>${testatorData.full_name || '[Testator Name]'}</strong>, 
+                residing at <strong>${testatorData.address || '[Address]'}</strong>, 
+                owe to you as of the date indicated above.</p>
+
+                ${creditor.reason ? `<p><strong>Reason for debt:</strong> ${creditor.reason}</p>` : ''}
+            </div>
+
+            <div class="amount-box">
+                <p><strong>Amount Owed:</strong></p>
+                <p class="amount-numeric">${amountNumeric}</p>
+                <p class="amount-words">(${amountWordsFormatted} Only)</p>
+            </div>
+
+            <div class="body-text">
+                <p>I kindly request that you review this statement and confirm its accuracy. 
+                If there are any discrepancies, omissions, or additional amounts that should be included, 
+                please indicate them in the section below.</p>
+            </div>
+
+            <div class="confirmation-box">
+                <h4>CREDITOR'S CONFIRMATION</h4>
+                <p>Please tick the appropriate box and sign below:</p>
+                
+                <div class="confirm-line">
+                    <span class="confirm-checkbox"></span>
+                    <span>I confirm that the amount stated above (<strong>${amountNumeric}</strong>) is correct and complete.</span>
+                </div>
+                
+                <div class="confirm-line">
+                    <span class="confirm-checkbox"></span>
+                    <span>The amount stated is incorrect. The correct amount is: __________________ XAF</span>
+                </div>
+                
+                <div class="confirm-line">
+                    <span class="confirm-checkbox"></span>
+                    <span>There are additional amounts/items not included. Details: </span>
+                </div>
+                <p style="border-bottom: 1px solid #333; min-height: 60px; margin-top: 0.5rem;"></p>
+
+                ${creditor.notes ? `<p style="margin-top: 1rem;"><strong>Additional Notes from Debtor:</strong> ${creditor.notes}</p>` : ''}
+            </div>
+
+            <div class="signature-area">
+                <p><strong>Creditor's Signature:</strong> <span class="sig-line"></span></p>
+                <p style="margin-top: 1rem;"><strong>Date:</strong> <span class="sig-line"></span></p>
+                <p style="margin-top: 1rem;"><strong>Contact Number:</strong> <span class="sig-line"></span></p>
+            </div>
+
+            <div style="margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #ccc; font-size: 0.85rem; color: #666;">
+                <p><em>This document is generated for estate planning purposes as part of the preparation of an Islamic Will (Al-Wasiyyah). 
+                Please return the signed copy to the testator or their designated executor.</em></p>
+            </div>
+        </div>
+    `;
+}
+
+function viewCreditorStatement(creditorId) {
+    const creditor = creditorsData.find(c => c.id === creditorId);
+    if (!creditor) return;
+
+    document.getElementById('statement-body').innerHTML = generateStatementHTML(creditor);
+    document.getElementById('statement-overlay').classList.add('active');
+}
+
+function printCreditorStatement(creditorId) {
+    const creditor = creditorsData.find(c => c.id === creditorId);
+    if (!creditor) return;
+
+    const statementHTML = generateStatementHTML(creditor);
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Creditor Statement - ${creditor.full_name}</title>
+            <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+            <style>
+                * { box-sizing: border-box; margin: 0; padding: 0; }
+                body { font-family: 'Outfit', sans-serif; padding: 2rem; line-height: 1.8; color: #1a1a1a; }
+                .letterhead { text-align: center; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 2px solid #1a6b52; }
+                .letterhead h2 { color: #0d4d3a; margin-bottom: 0.25rem; }
+                .date-line { text-align: right; margin-bottom: 2rem; }
+                .recipient { margin-bottom: 2rem; }
+                .subject { font-weight: 600; margin-bottom: 1.5rem; text-decoration: underline; }
+                .body-text { margin-bottom: 1.5rem; text-align: justify; }
+                .amount-box { background: #f5f0e6; padding: 1rem; border-radius: 8px; margin: 1.5rem 0; border-left: 4px solid #c9a227; }
+                .amount-numeric { font-size: 1.25rem; font-weight: 700; color: #0d4d3a; }
+                .amount-words { font-style: italic; color: #4a4a4a; margin-top: 0.5rem; }
+                .confirmation-box { background: #fff9e6; padding: 1.5rem; border: 2px dashed #c9a227; border-radius: 8px; margin: 2rem 0; }
+                .confirmation-box h4 { margin-bottom: 1rem; color: #0d4d3a; }
+                .confirm-line { display: flex; gap: 1rem; margin-bottom: 0.75rem; align-items: flex-start; }
+                .confirm-checkbox { width: 18px; height: 18px; border: 2px solid #1a1a1a; display: inline-block; flex-shrink: 0; margin-top: 4px; }
+                .signature-area { margin-top: 3rem; }
+                .sig-line { border-bottom: 1px solid #1a1a1a; min-width: 200px; display: inline-block; margin-left: 1rem; }
+                @media print { body { padding: 1rem; } }
+            </style>
+        </head>
+        <body>${statementHTML}</body>
+        </html>
+    `);
+    printWindow.document.close();
+    setTimeout(() => printWindow.print(), 250);
+}
+
+function closeStatement() {
+    document.getElementById('statement-overlay').classList.remove('active');
+}
+
+// Close statement modal on overlay click
+document.getElementById('statement-overlay')?.addEventListener('click', (e) => {
+    if (e.target.id === 'statement-overlay') closeStatement();
 });
