@@ -7,10 +7,20 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// PostgreSQL Connection
+// PostgreSQL Connection with better error handling
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
-    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+    ssl: process.env.DATABASE_URL && process.env.DATABASE_URL.includes('render.com') 
+        ? { rejectUnauthorized: false } 
+        : false,
+    max: 10,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 10000,
+});
+
+// Handle pool errors
+pool.on('error', (err) => {
+    console.error('Unexpected PostgreSQL pool error:', err);
 });
 
 // Middleware
@@ -20,8 +30,12 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Initialize Database Tables
 async function initDB() {
-    const client = await pool.connect();
+    let client;
     try {
+        client = await pool.connect();
+        console.log('Connected to PostgreSQL database');
+        
+        // Create tables one by one to avoid syntax issues
         await client.query(`
             CREATE TABLE IF NOT EXISTS testator (
                 id SERIAL PRIMARY KEY,
@@ -29,65 +43,94 @@ async function initDB() {
                 address TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
+            )
+        `);
 
+        await client.query(`
             CREATE TABLE IF NOT EXISTS heirs (
                 id SERIAL PRIMARY KEY,
-                testator_id INTEGER REFERENCES testator(id) ON DELETE CASCADE,
+                testator_id INTEGER,
                 relation VARCHAR(50) NOT NULL,
                 full_name VARCHAR(255) NOT NULL,
                 share_type VARCHAR(50)
-            );
+            )
+        `);
 
+        await client.query(`
             CREATE TABLE IF NOT EXISTS executors (
                 id SERIAL PRIMARY KEY,
-                testator_id INTEGER REFERENCES testator(id) ON DELETE CASCADE,
+                testator_id INTEGER,
                 full_name VARCHAR(255) NOT NULL,
                 contact VARCHAR(255)
-            );
+            )
+        `);
 
+        await client.query(`
             CREATE TABLE IF NOT EXISTS debtors (
                 id SERIAL PRIMARY KEY,
-                testator_id INTEGER REFERENCES testator(id) ON DELETE CASCADE,
+                testator_id INTEGER,
                 full_name VARCHAR(255) NOT NULL,
                 contact VARCHAR(255),
                 reason TEXT,
                 amount DECIMAL(15,2) DEFAULT 0,
                 notes TEXT
-            );
+            )
+        `);
 
+        await client.query(`
             CREATE TABLE IF NOT EXISTS creditors (
                 id SERIAL PRIMARY KEY,
-                testator_id INTEGER REFERENCES testator(id) ON DELETE CASCADE,
+                testator_id INTEGER,
                 full_name VARCHAR(255) NOT NULL,
                 contact VARCHAR(255),
                 reason TEXT,
                 amount DECIMAL(15,2) DEFAULT 0,
                 notes TEXT
-            );
+            )
+        `);
 
+        await client.query(`
             CREATE TABLE IF NOT EXISTS assets (
                 id SERIAL PRIMARY KEY,
-                testator_id INTEGER REFERENCES testator(id) ON DELETE CASCADE,
+                testator_id INTEGER,
                 category VARCHAR(50) NOT NULL,
                 description TEXT NOT NULL,
                 location VARCHAR(255),
                 estimated_value DECIMAL(15,2) DEFAULT 0,
                 notes TEXT
-            );
+            )
         `);
-        console.log('Database tables initialized');
+
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS will_edits (
+                id SERIAL PRIMARY KEY,
+                testator_id INTEGER,
+                section_name VARCHAR(100) NOT NULL,
+                content TEXT,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+            )
+        `);
+
+        console.log('Database tables initialized successfully');
     } catch (err) {
-        console.error('Error initializing database:', err);
+        console.error('Error initializing database:', err.message);
+        throw err;
     } finally {
-        client.release();
+        if (client) client.release();
     }
 }
 
 // Helper: Get current testator
 async function getCurrentTestator() {
-    const result = await pool.query('SELECT * FROM testator ORDER BY id DESC LIMIT 1');
-    return result.rows[0] || null;
+    try {
+        const result = await pool.query('SELECT * FROM testator ORDER BY id DESC LIMIT 1');
+        return result.rows[0] || null;
+    } catch (err) {
+        console.error('Error getting testator:', err.message);
+        return null;
+    }
 }
 
 // API Routes
@@ -233,7 +276,7 @@ app.get('/api/debtors', async (req, res) => {
         const testator = await getCurrentTestator();
         if (!testator) return res.json([]);
         const result = await pool.query('SELECT * FROM debtors WHERE testator_id = $1 ORDER BY id', [testator.id]);
-        res.json(result.rows.map(r => ({ ...r, amount: parseFloat(r.amount) })));
+        res.json(result.rows.map(r => ({ ...r, amount: parseFloat(r.amount) || 0 })));
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -282,7 +325,7 @@ app.get('/api/creditors', async (req, res) => {
         const testator = await getCurrentTestator();
         if (!testator) return res.json([]);
         const result = await pool.query('SELECT * FROM creditors WHERE testator_id = $1 ORDER BY id', [testator.id]);
-        res.json(result.rows.map(r => ({ ...r, amount: parseFloat(r.amount) })));
+        res.json(result.rows.map(r => ({ ...r, amount: parseFloat(r.amount) || 0 })));
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -331,7 +374,7 @@ app.get('/api/assets', async (req, res) => {
         const testator = await getCurrentTestator();
         if (!testator) return res.json([]);
         const result = await pool.query('SELECT * FROM assets WHERE testator_id = $1 ORDER BY id', [testator.id]);
-        res.json(result.rows.map(r => ({ ...r, estimated_value: parseFloat(r.estimated_value) })));
+        res.json(result.rows.map(r => ({ ...r, estimated_value: parseFloat(r.estimated_value) || 0 })));
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -520,8 +563,9 @@ function calculateIslamicInheritance(netEstate, heirs) {
 
 // Load demo data
 app.post('/api/load-demo', async (req, res) => {
-    const client = await pool.connect();
+    let client;
     try {
+        client = await pool.connect();
         await client.query('BEGIN');
 
         // Clear existing data
@@ -576,18 +620,20 @@ app.post('/api/load-demo', async (req, res) => {
         }
 
         await client.query('COMMIT');
-        res.json({ message: 'Demo data loaded', testator_id: testatorId });
+        res.json({ message: 'Demo data loaded successfully', testator_id: testatorId });
     } catch (err) {
-        await client.query('ROLLBACK');
+        if (client) await client.query('ROLLBACK');
+        console.error('Error loading demo data:', err.message);
         res.status(500).json({ error: err.message });
     } finally {
-        client.release();
+        if (client) client.release();
     }
 });
 
 // Reset data
 app.post('/api/reset', async (req, res) => {
     try {
+        await pool.query('DELETE FROM will_edits');
         await pool.query('DELETE FROM assets');
         await pool.query('DELETE FROM creditors');
         await pool.query('DELETE FROM debtors');
@@ -600,14 +646,82 @@ app.post('/api/reset', async (req, res) => {
     }
 });
 
+// Will Edits - Save
+app.post('/api/will-edits', async (req, res) => {
+    try {
+        const testator = await getCurrentTestator();
+        if (!testator) return res.status(400).json({ error: 'No testator' });
+        
+        const { edits } = req.body;
+        
+        // Clear existing edits for this testator
+        await pool.query('DELETE FROM will_edits WHERE testator_id = $1', [testator.id]);
+        
+        // Insert new edits
+        for (const [section, content] of Object.entries(edits)) {
+            if (content && content.trim()) {
+                await pool.query(
+                    'INSERT INTO will_edits (testator_id, section_name, content) VALUES ($1, $2, $3)',
+                    [testator.id, section, content]
+                );
+            }
+        }
+        
+        res.json({ message: 'Will edits saved' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Will Edits - Load
+app.get('/api/will-edits', async (req, res) => {
+    try {
+        const testator = await getCurrentTestator();
+        if (!testator) return res.json({ edits: {} });
+        
+        const result = await pool.query(
+            'SELECT section_name, content FROM will_edits WHERE testator_id = $1',
+            [testator.id]
+        );
+        
+        const edits = {};
+        result.rows.forEach(row => {
+            edits[row.section_name] = row.content;
+        });
+        
+        res.json({ edits });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Health check endpoint
+app.get('/api/health', async (req, res) => {
+    try {
+        await pool.query('SELECT 1');
+        res.json({ status: 'ok', database: 'connected' });
+    } catch (err) {
+        res.status(500).json({ status: 'error', database: 'disconnected', error: err.message });
+    }
+});
+
 // Serve HTML pages
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 app.get('/dashboard', (req, res) => res.sendFile(path.join(__dirname, 'public', 'dashboard.html')));
 app.get('/will', (req, res) => res.sendFile(path.join(__dirname, 'public', 'will.html')));
 
 // Start server
-initDB().then(() => {
-    app.listen(PORT, () => {
-        console.log(`Al-Wasiyyah server running on port ${PORT}`);
-    });
-});
+async function startServer() {
+    try {
+        await initDB();
+        app.listen(PORT, () => {
+            console.log(`Al-Wasiyyah server running on port ${PORT}`);
+            console.log(`Database: ${process.env.DATABASE_URL ? 'PostgreSQL connected' : 'No DATABASE_URL set'}`);
+        });
+    } catch (err) {
+        console.error('Failed to start server:', err.message);
+        process.exit(1);
+    }
+}
+
+startServer();

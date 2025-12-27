@@ -43,23 +43,31 @@ function initTestatorForm() {
 
 async function loadAllData() {
     try {
+        // First try to get testator
+        const testatorRes = await fetch('/api/testator');
+        if (testatorRes.ok) {
+            const testator = await testatorRes.json();
+            testatorId = testator.id;
+            document.getElementById('testator-name').value = testator.full_name || '';
+            document.getElementById('testator-address').value = testator.address || '';
+            document.getElementById('testator-display').textContent = testator.full_name || 'No testator registered';
+        }
+        
+        // Then get summary
         const res = await fetch('/api/summary');
         if (res.ok) {
             const data = await res.json();
-            testatorId = 1; // Assume we have a testator
             updateSummary(data);
-            document.getElementById('testator-name').value = data.testator.full_name || '';
-            document.getElementById('testator-address').value = data.testator.address || '';
-            document.getElementById('testator-display').textContent = data.testator.full_name || 'No testator registered';
             updateInheritance(data);
         }
+        
         await loadHeirs();
         await loadExecutors();
         await loadDebtors();
         await loadCreditors();
         await loadAssets();
     } catch (err) {
-        console.log('No data yet');
+        console.log('No data yet - please load demo data or create a testator');
     }
 }
 

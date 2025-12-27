@@ -32,10 +32,7 @@
             <h1 class="hero-title">Islamic Will & Estate<br>Management System</h1>
             <p class="hero-subtitle">Prepare your legacy according to the laws of Al-Faraid with complete transparency and ease</p>
             <div class="hero-buttons">
-                <button class="btn btn-primary" onclick="loadDemoData()">
-                    <span>→</span> Load Demo Data
-                </button>
-                <a href="/dashboard" class="btn btn-secondary">
+                <a href="/dashboard" class="btn btn-primary">
                     <span>◈</span> Go to Dashboard
                 </a>
             </div>
@@ -159,21 +156,5 @@
     <div id="toast" class="toast"></div>
 
     <script src="/js/app.js"></script>
-    <script>
-        async function loadDemoData() {
-            try {
-                showToast('Loading demo data...', 'info');
-                const res = await fetch('/api/load-demo', { method: 'POST' });
-                if (res.ok) {
-                    showToast('Demo data loaded successfully!', 'success');
-                    setTimeout(() => window.location.href = '/dashboard', 1500);
-                } else {
-                    showToast('Error loading demo data', 'error');
-                }
-            } catch (err) {
-                showToast('Error loading demo data', 'error');
-            }
-        }
-    </script>
 </body>
 </html>
