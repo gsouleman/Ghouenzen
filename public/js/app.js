@@ -2,7 +2,7 @@
 
 function formatCurrency(amount) {
     if (amount === null || amount === undefined) return '0 XAF';
-    return new Intl.NumberFormat('fr-FR').format(Math.round(amount)) + ' XAF';
+    return new Intl.NumberFormat('en-US').format(Math.round(amount)) + ' XAF';
 }
 
 function showToast(message, type = 'success') {
