@@ -151,21 +151,29 @@ async function initDB() {
                 )
             `);
             
-            // Migrate old data if reason/amount/notes columns exist in main tables
-            // Move existing data to items tables
-            await client.query(`
-                INSERT INTO debtor_items (debtor_id, reason, amount, notes)
-                SELECT id, reason, amount, notes FROM debtors 
-                WHERE reason IS NOT NULL OR amount > 0
-                AND NOT EXISTS (SELECT 1 FROM debtor_items WHERE debtor_id = debtors.id)
-            `).catch(() => {});
+            // Only migrate old data ONCE - check if migration already happened
+            // by checking if any items exist in the items tables
+            const debtorItemsCheck = await client.query('SELECT COUNT(*) FROM debtor_items');
+            const creditorItemsCheck = await client.query('SELECT COUNT(*) FROM creditor_items');
             
-            await client.query(`
-                INSERT INTO creditor_items (creditor_id, reason, amount, notes)
-                SELECT id, reason, amount, notes FROM creditors 
-                WHERE reason IS NOT NULL OR amount > 0
-                AND NOT EXISTS (SELECT 1 FROM creditor_items WHERE creditor_id = creditors.id)
-            `).catch(() => {});
+            // Only run migration if items tables are empty
+            if (parseInt(debtorItemsCheck.rows[0].count) === 0) {
+                await client.query(`
+                    INSERT INTO debtor_items (debtor_id, reason, amount, notes)
+                    SELECT id, reason, amount, notes FROM debtors 
+                    WHERE reason IS NOT NULL OR amount > 0
+                `).catch(() => {});
+                console.log('Migration: Migrated debtor items from old schema');
+            }
+            
+            if (parseInt(creditorItemsCheck.rows[0].count) === 0) {
+                await client.query(`
+                    INSERT INTO creditor_items (creditor_id, reason, amount, notes)
+                    SELECT id, reason, amount, notes FROM creditors 
+                    WHERE reason IS NOT NULL OR amount > 0
+                `).catch(() => {});
+                console.log('Migration: Migrated creditor items from old schema');
+            }
             
             console.log('Migration: line items tables ready');
         } catch (migrationErr) {
