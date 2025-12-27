@@ -110,8 +110,6 @@ async function initDB() {
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
-            )
-        `);
 
         console.log('Database tables initialized successfully');
     } catch (err) {
