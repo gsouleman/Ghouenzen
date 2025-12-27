@@ -115,6 +115,19 @@ async function initDB() {
             )
         `);
 
+        // Add gender and language columns if they don't exist (migration)
+        try {
+            await client.query(`ALTER TABLE debtors ADD COLUMN IF NOT EXISTS gender VARCHAR(10) DEFAULT 'male'`);
+            await client.query(`ALTER TABLE debtors ADD COLUMN IF NOT EXISTS language VARCHAR(10) DEFAULT 'english'`);
+            await client.query(`ALTER TABLE debtors ADD COLUMN IF NOT EXISTS contact VARCHAR(255) DEFAULT ''`);
+            await client.query(`ALTER TABLE creditors ADD COLUMN IF NOT EXISTS gender VARCHAR(10) DEFAULT 'male'`);
+            await client.query(`ALTER TABLE creditors ADD COLUMN IF NOT EXISTS language VARCHAR(10) DEFAULT 'english'`);
+            await client.query(`ALTER TABLE creditors ADD COLUMN IF NOT EXISTS contact VARCHAR(255) DEFAULT ''`);
+            console.log('Migration: gender, language, contact columns added');
+        } catch (migrationErr) {
+            console.log('Migration note:', migrationErr.message);
+        }
+
         console.log('Database tables initialized successfully');
     } catch (err) {
         console.error('Error initializing database:', err.message);

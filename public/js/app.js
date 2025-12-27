@@ -14,7 +14,10 @@ function showToast(message, type = 'success') {
 
 async function apiGet(endpoint) {
     const res = await fetch(endpoint);
-    if (!res.ok) throw new Error('API request failed');
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'API request failed');
+    }
     return res.json();
 }
 
@@ -24,7 +27,11 @@ async function apiPost(endpoint, data) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
     });
-    if (!res.ok) throw new Error('API request failed');
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        console.error('API Error:', err);
+        throw new Error(err.error || 'API request failed');
+    }
     return res.json();
 }
 
@@ -34,13 +41,20 @@ async function apiPut(endpoint, data) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
     });
-    if (!res.ok) throw new Error('API request failed');
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        console.error('API Error:', err);
+        throw new Error(err.error || 'API request failed');
+    }
     return res.json();
 }
 
 async function apiDelete(endpoint) {
     const res = await fetch(endpoint, { method: 'DELETE' });
-    if (!res.ok) throw new Error('API request failed');
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'API request failed');
+    }
     return res.json();
 }
 
