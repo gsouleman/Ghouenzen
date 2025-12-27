@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Will Document | Al-Wasiyyah</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="will-page">
+    <div class="pattern-overlay"></div>
+    
+    <nav class="navbar no-print">
+        <div class="nav-container">
+            <a href="/" class="logo">
+                <span class="logo-icon">☪</span>
+                <span class="logo-text">Al-Wasiyyah</span>
+            </a>
+            <div class="nav-links">
+                <a href="/" class="nav-link">Home</a>
+                <a href="/dashboard" class="nav-link">Dashboard</a>
+                <a href="/will" class="nav-link active">Will Document</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="will-main">
+        <div class="will-container">
+            <div class="will-actions no-print">
+                <button class="btn btn-outline" onclick="window.print()">🖨️ Print Document</button>
+                <a href="/dashboard" class="btn btn-primary">← Back to Dashboard</a>
+            </div>
+
+            <article class="will-document">
+                <header class="will-header">
+                    <div class="bismillah-header">بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ</div>
+                    <h1>LAST WILL AND TESTAMENT</h1>
+                    <p class="will-subtitle">Islamic Will (Al-Wasiyyah)</p>
+                </header>
+
+                <section class="will-section">
+                    <p class="will-intro">
+                        This is the last will and testament of <strong id="will-name">_______________</strong>,
+                        residing at <span id="will-address">_______________</span>,
+                        being of sound mind and memory.
+                    </p>
+                </section>
+
+                <section class="will-section">
+                    <h2>1. DECLARATION OF FAITH (Shahada)</h2>
+                    <p>I bear witness that there is no god but Allah, and I bear witness that Muhammad (peace be upon him) is His servant and messenger.</p>
+                </section>
+
+                <section class="will-section">
+                    <h2>2. APPOINTMENT OF EXECUTOR(S)</h2>
+                    <p>I appoint the following person(s) as the executor(s) of my will:</p>
+                    <ul id="will-executors"><li><em>No executors designated</em></li></ul>
+                    <p>They are to act with justice, in consultation with a qualified Islamic scholar, to ensure the execution of my will according to Islamic law (Shariah).</p>
+                </section>
+
+                <section class="will-section">
+                    <h2>3. SETTLEMENT OF DEBTS AND OBLIGATIONS</h2>
+                    <p class="emphasis">MY FIRST AND BINDING INSTRUCTION is that all my lawful debts and obligations must be settled fully from my estate before any distribution to heirs.</p>
+                    <p>The attached "Estate Management Worksheet" forms an integral part of this will.</p>
+                    <p>My executors must:</p>
+                    <ol type="a">
+                        <li>Identify, verify, and pay all creditors from <strong>Section B</strong></li>
+                        <li>Collect all debts owed to me from <strong>Section A</strong></li>
+                        <li><strong>LIQUIDATE (SELL)</strong> assets from <strong>Section C</strong> to settle debts</li>
+                    </ol>
+                    <p class="emphasis">THE PRIORITY IS THE COMPLETE ELIMINATION OF DEBT FROM THE ESTATE.</p>
+                </section>
+
+                <section class="will-section">
+                    <h2>4. BEQUESTS (Wasiyyah)</h2>
+                    <p>After the full settlement of all debts, a bequest of <strong>NOT EXCEEDING ONE-THIRD (1/3)</strong> of the remaining net estate may be made to non-heirs as specified below:</p>
+                    <div class="blank-line">Beneficiary: _______________________________________________</div>
+                    <p class="note"><em>If no bequest is specified above, this clause is void.</em></p>
+                </section>
+
+                <section class="will-section">
+                    <h2>5. DISTRIBUTION OF RESIDUAL ESTATE (Al-Faraid)</h2>
+                    <p class="emphasis">ONLY AFTER the full settlement of debts and any valid bequest, the remainder shall be distributed among my legal heirs according to Islamic laws of inheritance (Al-Faraid).</p>
+                    <p>My known heirs at the time of this will are:</p>
+                    <div class="heirs-box" id="will-heirs"><p><em>No heirs registered</em></p></div>
+                    <p>The specific shares shall be calculated by a qualified Islamic legal authority based on the <strong>NET ESTATE VALUE</strong>.</p>
+                </section>
+
+                <section class="will-section">
+                    <h2>6. GENERAL INSTRUCTIONS</h2>
+                    <p>I request my heirs to resolve matters amicably and fear Allah in their dealings.</p>
+                    <p>My executors are authorized to incur necessary expenses for the execution of this will.</p>
+                </section>
+
+                <section class="will-section signatures">
+                    <h2>SIGNATURES</h2>
+                    <div class="signature-block">
+                        <div class="sig-row"><span>Testator:</span><span class="sig-line"></span></div>
+                        <div class="sig-row"><span>Date:</span><span class="sig-line">_____ / _____ / _______</span></div>
+                    </div>
+                    <div class="witnesses">
+                        <div class="witness">
+                            <h4>Witness 1:</h4>
+                            <div class="sig-row"><span>Name:</span><span class="sig-line"></span></div>
+                            <div class="sig-row"><span>Signature:</span><span class="sig-line"></span></div>
+                        </div>
+                        <div class="witness">
+                            <h4>Witness 2:</h4>
+                            <div class="sig-row"><span>Name:</span><span class="sig-line"></span></div>
+                            <div class="sig-row"><span>Signature:</span><span class="sig-line"></span></div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="will-section worksheets">
+                    <h2>ATTACHED: Estate Management Worksheet</h2>
+
+                    <div class="worksheet">
+                        <h3>Section A: Debtors (People Who Owe the Estate)</h3>
+                        <table>
+                            <thead><tr><th>#</th><th>Name</th><th>Reason</th><th>Amount (XAF)</th></tr></thead>
+                            <tbody id="will-debtors"><tr><td colspan="4"><em>No debtors</em></td></tr></tbody>
+                            <tfoot><tr><td colspan="3"><strong>Total to Collect:</strong></td><td id="will-debtors-total"><strong>0 XAF</strong></td></tr></tfoot>
+                        </table>
+                    </div>
+
+                    <div class="worksheet">
+                        <h3>Section B: Creditors (Debts of the Estate)</h3>
+                        <table>
+                            <thead><tr><th>#</th><th>Name</th><th>Reason</th><th>Amount (XAF)</th></tr></thead>
+                            <tbody id="will-creditors"><tr><td colspan="4"><em>No creditors</em></td></tr></tbody>
+                            <tfoot><tr><td colspan="3"><strong>Total Liabilities:</strong></td><td id="will-creditors-total"><strong>0 XAF</strong></td></tr></tfoot>
+                        </table>
+                    </div>
+
+                    <div class="worksheet">
+                        <h3>Section C: Assets (To Be Liquidated)</h3>
+                        <table>
+                            <thead><tr><th>#</th><th>Description</th><th>Location</th><th>Value (XAF)</th></tr></thead>
+                            <tbody id="will-assets"><tr><td colspan="4"><em>No assets</em></td></tr></tbody>
+                            <tfoot><tr><td colspan="3"><strong>Grand Total:</strong></td><td id="will-assets-total"><strong>0 XAF</strong></td></tr></tfoot>
+                        </table>
+                    </div>
+
+                    <div class="worksheet calculation">
+                        <h3>Section D: Net Estate Calculation</h3>
+                        <table class="calc-table">
+                            <tr><td>A. Total Estate Value</td><td id="will-calc-a">0 XAF</td></tr>
+                            <tr><td>B. Total from Debtors</td><td id="will-calc-b">+ 0 XAF</td></tr>
+                            <tr class="subtotal"><td>C. Available Pool (A + B)</td><td id="will-calc-c">0 XAF</td></tr>
+                            <tr><td>D. Total Liabilities</td><td id="will-calc-d">- 0 XAF</td></tr>
+                            <tr class="final"><td><strong>E. NET ESTATE FOR DISTRIBUTION</strong></td><td id="will-calc-e"><strong>0 XAF</strong></td></tr>
+                        </table>
+                    </div>
+
+                    <div class="worksheet">
+                        <h3>Islamic Inheritance Distribution</h3>
+                        <table>
+                            <thead><tr><th>Heir</th><th>Relation</th><th>Share</th><th>Amount (XAF)</th></tr></thead>
+                            <tbody id="will-inheritance"><tr><td colspan="4"><em>Calculated based on net estate</em></td></tr></tbody>
+                        </table>
+                        <p class="worksheet-note"><em>Final distribution must be verified by a qualified Islamic scholar.</em></p>
+                    </div>
+                </section>
+
+                <footer class="will-footer">
+                    <p>Document generated by Al-Wasiyyah Islamic Will & Estate Management System</p>
+                    <p>Generated on: <span id="will-date"></span></p>
+                </footer>
+            </article>
+        </div>
+    </main>
+
+    <div id="toast" class="toast"></div>
+
+    <script src="/js/app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', loadWillData);
+
+        async function loadWillData() {
+            document.getElementById('will-date').textContent = new Date().toLocaleDateString('en-GB', {
+                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+            });
+
+            try {
+                // Load summary
+                const summaryRes = await fetch('/api/summary');
+                if (!summaryRes.ok) return;
+                const summary = await summaryRes.json();
+
+                // Testator
+                document.getElementById('will-name').textContent = summary.testator.full_name || '_______________';
+                document.getElementById('will-address').textContent = summary.testator.address || '_______________';
+
+                // Totals
+                const t = summary.totals;
+                document.getElementById('will-calc-a').textContent = formatCurrency(t.assets);
+                document.getElementById('will-calc-b').textContent = '+ ' + formatCurrency(t.debtors);
+                document.getElementById('will-calc-c').textContent = formatCurrency(t.total_pool);
+                document.getElementById('will-calc-d').textContent = '- ' + formatCurrency(t.creditors);
+                document.getElementById('will-calc-e').innerHTML = '<strong>' + formatCurrency(t.net_estate) + '</strong>';
+                document.getElementById('will-debtors-total').innerHTML = '<strong>' + formatCurrency(t.debtors) + '</strong>';
+                document.getElementById('will-creditors-total').innerHTML = '<strong>' + formatCurrency(t.creditors) + '</strong>';
+                document.getElementById('will-assets-total').innerHTML = '<strong>' + formatCurrency(t.assets) + '</strong>';
+
+                // Load details
+                await loadExecutors();
+                await loadHeirs();
+                await loadDebtors();
+                await loadCreditors();
+                await loadAssets();
+                loadInheritance(summary.inheritance);
+            } catch (err) {
+                console.error('Error loading will data:', err);
+            }
+        }
+
+        async function loadExecutors() {
+            const res = await fetch('/api/executors');
+            const data = await res.json();
+            const el = document.getElementById('will-executors');
+            if (data.length > 0) {
+                el.innerHTML = data.map((e, i) => `<li><strong>Executor ${i+1}:</strong> ${e.full_name}${e.contact ? ' - ' + e.contact : ''}</li>`).join('');
+            }
+        }
+
+        async function loadHeirs() {
+            const res = await fetch('/api/heirs');
+            const data = await res.json();
+            const el = document.getElementById('will-heirs');
+            if (data.length > 0) {
+                el.innerHTML = '<ul>' + data.map(h => `<li><strong>${capitalize(h.relation)}:</strong> ${h.full_name}</li>`).join('') + '</ul>';
+            }
+        }
+
+        async function loadDebtors() {
+            const res = await fetch('/api/debtors');
+            const data = await res.json();
+            const el = document.getElementById('will-debtors');
+            if (data.length > 0) {
+                el.innerHTML = data.map((d, i) => `<tr><td>${i+1}</td><td>${d.full_name}</td><td>${d.reason || '-'}</td><td>${formatCurrency(d.amount)}</td></tr>`).join('');
+            }
+        }
+
+        async function loadCreditors() {
+            const res = await fetch('/api/creditors');
+            const data = await res.json();
+            const el = document.getElementById('will-creditors');
+            if (data.length > 0) {
+                el.innerHTML = data.map((c, i) => `<tr><td>${i+1}</td><td>${c.full_name}</td><td>${c.reason || '-'}</td><td>${formatCurrency(c.amount)}</td></tr>`).join('');
+            }
+        }
+
+        async function loadAssets() {
+            const res = await fetch('/api/assets');
+            const data = await res.json();
+            const el = document.getElementById('will-assets');
+            if (data.length > 0) {
+                el.innerHTML = data.map((a, i) => `<tr><td>${i+1}</td><td>${a.description}</td><td>${a.location || '-'}</td><td>${formatCurrency(a.estimated_value)}</td></tr>`).join('');
+            }
+        }
+
+        function loadInheritance(inheritance) {
+            const el = document.getElementById('will-inheritance');
+            if (inheritance && inheritance.shares && inheritance.shares.length > 0) {
+                el.innerHTML = inheritance.shares.map(s => `<tr><td>${s.name}</td><td>${s.relation}</td><td>${s.fraction}</td><td>${formatCurrency(s.amount)}</td></tr>`).join('');
+            }
+        }
+
+        function capitalize(str) {
+            return str ? str.charAt(0).toUpperCase() + str.slice(1) : '';
+        }
+    </script>
+</body>
+</html>
