@@ -1,70 +1,51 @@
-// Al-Wasiyyah - Main JavaScript Utilities
+// GHOUENZEN Portal - JavaScript
 
-function formatCurrency(amount) {
-    if (amount === null || amount === undefined) return '0 XAF';
-    return new Intl.NumberFormat('en-US').format(Math.round(amount)) + ' XAF';
-}
-
-function showToast(message, type = 'success') {
-    const toast = document.getElementById('toast');
-    toast.textContent = message;
-    toast.className = `toast ${type} show`;
-    setTimeout(() => toast.classList.remove('show'), 3000);
-}
-
-async function apiGet(endpoint) {
-    const res = await fetch(endpoint);
-    if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || 'API request failed');
-    }
-    return res.json();
-}
-
-async function apiPost(endpoint, data) {
-    const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
+// Smooth scroll for anchor links
+document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+            target.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }
     });
-    if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        console.error('API Error:', err);
-        throw new Error(err.error || 'API request failed');
-    }
-    return res.json();
-}
+});
 
-async function apiPut(endpoint, data) {
-    const res = await fetch(endpoint, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
+// Navbar background on scroll
+window.addEventListener('scroll', () => {
+    const navbar = document.querySelector('.navbar');
+    if (window.scrollY > 50) {
+        navbar.style.boxShadow = '0 4px 20px rgba(0,0,0,0.1)';
+    } else {
+        navbar.style.boxShadow = 'none';
+    }
+});
+
+// Animate elements on scroll
+const observerOptions = {
+    threshold: 0.1,
+    rootMargin: '0px 0px -50px 0px'
+};
+
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            entry.target.style.opacity = '1';
+            entry.target.style.transform = 'translateY(0)';
+        }
     });
-    if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        console.error('API Error:', err);
-        throw new Error(err.error || 'API request failed');
-    }
-    return res.json();
-}
+}, observerOptions);
 
-async function apiDelete(endpoint) {
-    const res = await fetch(endpoint, { method: 'DELETE' });
-    if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || 'API request failed');
-    }
-    return res.json();
-}
-
-async function resetData() {
-    if (confirm('Start a new session? All data will be cleared.')) {
-        await fetch('/api/reset', { method: 'POST' });
-        window.location.href = '/';
-    }
-}
-
-function capitalize(str) {
-    return str ? str.charAt(0).toUpperCase() + str.slice(1) : '';
-}
+// Observe elements for animation
+document.addEventListener('DOMContentLoaded', () => {
+    const animateElements = document.querySelectorAll('.service-card, .project-card, .feature, .contact-item');
+    animateElements.forEach(el => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(20px)';
+        el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+        observer.observe(el);
+    });
+});
