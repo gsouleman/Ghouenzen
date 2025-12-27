@@ -285,9 +285,26 @@ function showModal(type, data = null) {
                 </div>
             </div>
             <div class="form-group"><label>Contact</label><input type="text" id="f-contact"></div>
-            <div class="form-group"><label>Reason</label><input type="text" id="f-reason"></div>
-            <div class="form-group"><label>Amount (XAF)</label><input type="number" id="f-amount" required></div>
-            <div class="form-group"><label>Notes</label><textarea id="f-notes" rows="2"></textarea></div>
+            
+            <div class="line-items-section">
+                <div class="line-items-header">
+                    <h4>Debt Items</h4>
+                    <button type="button" class="btn btn-sm btn-outline" onclick="addLineItem('debtor')">+ Add Item</button>
+                </div>
+                <div id="line-items-container">
+                    <div class="line-item" data-index="0">
+                        <div class="form-group"><label>Reason</label><input type="text" class="item-reason"></div>
+                        <div class="form-row">
+                            <div class="form-group"><label>Amount (XAF)</label><input type="number" class="item-amount" required></div>
+                            <div class="form-group"><label>Notes</label><input type="text" class="item-notes"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="line-items-total">
+                    <strong>Total: <span id="items-total">0 XAF</span></strong>
+                </div>
+            </div>
+            
             <button type="submit" class="btn btn-primary">${isEdit ? 'Update' : 'Add'} Debtor</button>
         </form>`,
         creditor: `<form id="modal-form" class="form">
@@ -307,9 +324,26 @@ function showModal(type, data = null) {
                 </div>
             </div>
             <div class="form-group"><label>Contact</label><input type="text" id="f-contact"></div>
-            <div class="form-group"><label>Reason</label><input type="text" id="f-reason"></div>
-            <div class="form-group"><label>Amount (XAF)</label><input type="number" id="f-amount" required></div>
-            <div class="form-group"><label>Notes</label><textarea id="f-notes" rows="2"></textarea></div>
+            
+            <div class="line-items-section">
+                <div class="line-items-header">
+                    <h4>Debt Items</h4>
+                    <button type="button" class="btn btn-sm btn-outline" onclick="addLineItem('creditor')">+ Add Item</button>
+                </div>
+                <div id="line-items-container">
+                    <div class="line-item" data-index="0">
+                        <div class="form-group"><label>Reason</label><input type="text" class="item-reason"></div>
+                        <div class="form-row">
+                            <div class="form-group"><label>Amount (XAF)</label><input type="number" class="item-amount" required></div>
+                            <div class="form-group"><label>Notes</label><input type="text" class="item-notes"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="line-items-total">
+                    <strong>Total: <span id="items-total">0 XAF</span></strong>
+                </div>
+            </div>
+            
             <button type="submit" class="btn btn-primary">${isEdit ? 'Update' : 'Add'} Creditor</button>
         </form>`,
         asset: `<form id="modal-form" class="form">
@@ -337,8 +371,71 @@ function showModal(type, data = null) {
     if (data) {
         setTimeout(() => fillForm(type, data), 50);
     }
+    
+    // Setup line item total calculation
+    if (type === 'debtor' || type === 'creditor') {
+        setTimeout(() => {
+            document.querySelectorAll('.item-amount').forEach(input => {
+                input.addEventListener('input', updateItemsTotal);
+            });
+        }, 100);
+    }
 
     document.getElementById('modal-form').onsubmit = (e) => handleSubmit(e, type, data?.id);
+}
+
+function addLineItem(type) {
+    const container = document.getElementById('line-items-container');
+    const index = container.children.length;
+    const itemHTML = `
+        <div class="line-item" data-index="${index}">
+            <div class="line-item-header">
+                <span>Item ${index + 1}</span>
+                <button type="button" class="btn-remove-item" onclick="removeLineItem(this)">✕</button>
+            </div>
+            <div class="form-group"><label>Reason</label><input type="text" class="item-reason"></div>
+            <div class="form-row">
+                <div class="form-group"><label>Amount (XAF)</label><input type="number" class="item-amount" required></div>
+                <div class="form-group"><label>Notes</label><input type="text" class="item-notes"></div>
+            </div>
+        </div>
+    `;
+    container.insertAdjacentHTML('beforeend', itemHTML);
+    
+    // Add event listener for new amount input
+    const newAmountInput = container.lastElementChild.querySelector('.item-amount');
+    newAmountInput.addEventListener('input', updateItemsTotal);
+}
+
+function removeLineItem(btn) {
+    const container = document.getElementById('line-items-container');
+    if (container.children.length > 1) {
+        btn.closest('.line-item').remove();
+        updateItemsTotal();
+    } else {
+        showToast('At least one item is required', 'error');
+    }
+}
+
+function updateItemsTotal() {
+    const amounts = document.querySelectorAll('.item-amount');
+    let total = 0;
+    amounts.forEach(input => {
+        total += parseFloat(input.value) || 0;
+    });
+    document.getElementById('items-total').textContent = formatCurrency(total);
+}
+
+function getLineItems() {
+    const items = [];
+    document.querySelectorAll('.line-item').forEach(item => {
+        items.push({
+            reason: item.querySelector('.item-reason').value || '',
+            amount: parseFloat(item.querySelector('.item-amount').value) || 0,
+            notes: item.querySelector('.item-notes').value || ''
+        });
+    });
+    return items;
 }
 
 function fillForm(type, data) {
@@ -357,9 +454,31 @@ function fillForm(type, data) {
             document.getElementById('f-gender').value = data.gender || 'male';
             document.getElementById('f-language').value = data.language || 'english';
             document.getElementById('f-contact').value = data.contact || '';
-            document.getElementById('f-reason').value = data.reason || '';
-            document.getElementById('f-amount').value = data.amount;
-            document.getElementById('f-notes').value = data.notes || '';
+            
+            // Fill line items
+            const container = document.getElementById('line-items-container');
+            container.innerHTML = '';
+            
+            const items = data.items && data.items.length > 0 ? data.items : [{ reason: '', amount: 0, notes: '' }];
+            items.forEach((item, index) => {
+                const itemHTML = `
+                    <div class="line-item" data-index="${index}">
+                        ${index > 0 ? `<div class="line-item-header"><span>Item ${index + 1}</span><button type="button" class="btn-remove-item" onclick="removeLineItem(this)">✕</button></div>` : ''}
+                        <div class="form-group"><label>Reason</label><input type="text" class="item-reason" value="${item.reason || ''}"></div>
+                        <div class="form-row">
+                            <div class="form-group"><label>Amount (XAF)</label><input type="number" class="item-amount" value="${item.amount || 0}" required></div>
+                            <div class="form-group"><label>Notes</label><input type="text" class="item-notes" value="${item.notes || ''}"></div>
+                        </div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', itemHTML);
+            });
+            
+            // Add event listeners and update total
+            document.querySelectorAll('.item-amount').forEach(input => {
+                input.addEventListener('input', updateItemsTotal);
+            });
+            updateItemsTotal();
             break;
         case 'asset':
             document.getElementById('f-category').value = data.category;
@@ -390,9 +509,7 @@ async function handleSubmit(e, type, id) {
                 gender: document.getElementById('f-gender').value,
                 language: document.getElementById('f-language').value,
                 contact: document.getElementById('f-contact').value,
-                reason: document.getElementById('f-reason').value, 
-                amount: parseFloat(document.getElementById('f-amount').value) || 0, 
-                notes: document.getElementById('f-notes').value 
+                items: getLineItems()
             };
             break;
         case 'asset':
@@ -548,9 +665,44 @@ function generateCreditorStatementHTML(creditor) {
     const gender = creditor.gender || 'male';
     const today = getDateFormatted(lang);
     const title = getTitle(gender, lang);
-    const amountNumeric = formatCurrencyXAF(creditor.amount);
-    const amountWords = lang === 'french' ? numberToWordsFrench(creditor.amount) : numberToWordsEnglish(creditor.amount);
+    const totalAmount = creditor.amount || 0;
+    const amountNumeric = formatCurrencyXAF(totalAmount);
+    const amountWords = lang === 'french' ? numberToWordsFrench(totalAmount) : numberToWordsEnglish(totalAmount);
     const amountWordsFormatted = amountWords.charAt(0).toUpperCase() + amountWords.slice(1) + (lang === 'french' ? ' Francs CFA' : ' CFA Francs');
+    
+    const items = creditor.items || [];
+    const hasMultipleItems = items.length > 1;
+    
+    // Generate items table HTML
+    const itemsTableHTML = items.length > 0 ? `
+        <table class="items-table" style="width: 100%; border-collapse: collapse; margin: 1rem 0;">
+            <thead>
+                <tr style="background: #f5f0e6;">
+                    <th style="padding: 0.5rem; border: 1px solid #ddd; text-align: left;">#</th>
+                    <th style="padding: 0.5rem; border: 1px solid #ddd; text-align: left;">${lang === 'french' ? 'Motif' : 'Reason'}</th>
+                    <th style="padding: 0.5rem; border: 1px solid #ddd; text-align: right;">${lang === 'french' ? 'Montant' : 'Amount'}</th>
+                    <th style="padding: 0.5rem; border: 1px solid #ddd; text-align: left;">${lang === 'french' ? 'Notes' : 'Notes'}</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${items.map((item, idx) => `
+                    <tr>
+                        <td style="padding: 0.5rem; border: 1px solid #ddd;">${idx + 1}</td>
+                        <td style="padding: 0.5rem; border: 1px solid #ddd;">${item.reason || '-'}</td>
+                        <td style="padding: 0.5rem; border: 1px solid #ddd; text-align: right;">${formatCurrencyXAF(item.amount)}</td>
+                        <td style="padding: 0.5rem; border: 1px solid #ddd;">${item.notes || '-'}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+            <tfoot>
+                <tr style="background: #f5f0e6; font-weight: bold;">
+                    <td colspan="2" style="padding: 0.5rem; border: 1px solid #ddd;">${lang === 'french' ? 'TOTAL' : 'TOTAL'}</td>
+                    <td style="padding: 0.5rem; border: 1px solid #ddd; text-align: right;">${amountNumeric}</td>
+                    <td style="padding: 0.5rem; border: 1px solid #ddd;"></td>
+                </tr>
+            </tfoot>
+        </table>
+    ` : '';
 
     if (lang === 'french') {
         return `
@@ -571,10 +723,10 @@ function generateCreditorStatementHTML(creditor) {
                     <strong>${testatorData.full_name || '[Nom du Testateur]'}</strong>, 
                     résidant à <strong>${testatorData.address || '[Adresse]'}</strong>, 
                     vous dois à la date indiquée ci-dessus.</p>
-                    ${creditor.reason ? `<p><strong>Motif de la dette:</strong> ${creditor.reason}</p>` : ''}
                 </div>
+                ${hasMultipleItems ? `<div class="items-section"><h4>Détail des dettes:</h4>${itemsTableHTML}</div>` : (items[0]?.reason ? `<p><strong>Motif de la dette:</strong> ${items[0].reason}</p>` : '')}
                 <div class="amount-box">
-                    <p><strong>Montant dû:</strong></p>
+                    <p><strong>Montant total dû:</strong></p>
                     <p class="amount-numeric">${amountNumeric}</p>
                     <p class="amount-words">(${amountWordsFormatted} seulement)</p>
                 </div>
@@ -599,7 +751,6 @@ function generateCreditorStatementHTML(creditor) {
                         <span>Il y a des montants/éléments supplémentaires non inclus. Détails: </span>
                     </div>
                     <p style="border-bottom: 1px solid #333; min-height: 60px; margin-top: 0.5rem;"></p>
-                    ${creditor.notes ? `<p style="margin-top: 1rem;"><strong>Notes supplémentaires du débiteur:</strong> ${creditor.notes}</p>` : ''}
                 </div>
                 <div class="signature-area">
                     <p><strong>Signature du créancier:</strong> <span class="sig-line"></span></p>
@@ -629,10 +780,10 @@ function generateCreditorStatementHTML(creditor) {
                 <strong>${testatorData.full_name || '[Testator Name]'}</strong>, 
                 residing at <strong>${testatorData.address || '[Address]'}</strong>, 
                 owe to you as of the date indicated above.</p>
-                ${creditor.reason ? `<p><strong>Reason for debt:</strong> ${creditor.reason}</p>` : ''}
             </div>
+            ${hasMultipleItems ? `<div class="items-section"><h4>Debt Details:</h4>${itemsTableHTML}</div>` : (items[0]?.reason ? `<p><strong>Reason for debt:</strong> ${items[0].reason}</p>` : '')}
             <div class="amount-box">
-                <p><strong>Amount Owed:</strong></p>
+                <p><strong>Total Amount Owed:</strong></p>
                 <p class="amount-numeric">${amountNumeric}</p>
                 <p class="amount-words">(${amountWordsFormatted} Only)</p>
             </div>
@@ -657,7 +808,6 @@ function generateCreditorStatementHTML(creditor) {
                     <span>There are additional amounts/items not included. Details: </span>
                 </div>
                 <p style="border-bottom: 1px solid #333; min-height: 60px; margin-top: 0.5rem;"></p>
-                ${creditor.notes ? `<p style="margin-top: 1rem;"><strong>Additional Notes from Debtor:</strong> ${creditor.notes}</p>` : ''}
             </div>
             <div class="signature-area">
                 <p><strong>Creditor's Signature:</strong> <span class="sig-line"></span></p>
@@ -673,9 +823,44 @@ function generateDebtorStatementHTML(debtor) {
     const gender = debtor.gender || 'male';
     const today = getDateFormatted(lang);
     const title = getTitle(gender, lang);
-    const amountNumeric = formatCurrencyXAF(debtor.amount);
-    const amountWords = lang === 'french' ? numberToWordsFrench(debtor.amount) : numberToWordsEnglish(debtor.amount);
+    const totalAmount = debtor.amount || 0;
+    const amountNumeric = formatCurrencyXAF(totalAmount);
+    const amountWords = lang === 'french' ? numberToWordsFrench(totalAmount) : numberToWordsEnglish(totalAmount);
     const amountWordsFormatted = amountWords.charAt(0).toUpperCase() + amountWords.slice(1) + (lang === 'french' ? ' Francs CFA' : ' CFA Francs');
+    
+    const items = debtor.items || [];
+    const hasMultipleItems = items.length > 1;
+    
+    // Generate items table HTML
+    const itemsTableHTML = items.length > 0 ? `
+        <table class="items-table" style="width: 100%; border-collapse: collapse; margin: 1rem 0;">
+            <thead>
+                <tr style="background: #f5f0e6;">
+                    <th style="padding: 0.5rem; border: 1px solid #ddd; text-align: left;">#</th>
+                    <th style="padding: 0.5rem; border: 1px solid #ddd; text-align: left;">${lang === 'french' ? 'Motif' : 'Reason'}</th>
+                    <th style="padding: 0.5rem; border: 1px solid #ddd; text-align: right;">${lang === 'french' ? 'Montant' : 'Amount'}</th>
+                    <th style="padding: 0.5rem; border: 1px solid #ddd; text-align: left;">${lang === 'french' ? 'Notes' : 'Notes'}</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${items.map((item, idx) => `
+                    <tr>
+                        <td style="padding: 0.5rem; border: 1px solid #ddd;">${idx + 1}</td>
+                        <td style="padding: 0.5rem; border: 1px solid #ddd;">${item.reason || '-'}</td>
+                        <td style="padding: 0.5rem; border: 1px solid #ddd; text-align: right;">${formatCurrencyXAF(item.amount)}</td>
+                        <td style="padding: 0.5rem; border: 1px solid #ddd;">${item.notes || '-'}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+            <tfoot>
+                <tr style="background: #f5f0e6; font-weight: bold;">
+                    <td colspan="2" style="padding: 0.5rem; border: 1px solid #ddd;">${lang === 'french' ? 'TOTAL' : 'TOTAL'}</td>
+                    <td style="padding: 0.5rem; border: 1px solid #ddd; text-align: right;">${amountNumeric}</td>
+                    <td style="padding: 0.5rem; border: 1px solid #ddd;"></td>
+                </tr>
+            </tfoot>
+        </table>
+    ` : '';
 
     if (lang === 'french') {
         return `
@@ -696,10 +881,10 @@ function generateDebtorStatementHTML(debtor) {
                     doit à moi, <strong>${testatorData.full_name || '[Nom du Testateur]'}</strong>, 
                     résidant à <strong>${testatorData.address || '[Adresse]'}</strong>, 
                     à la date indiquée ci-dessus.</p>
-                    ${debtor.reason ? `<p><strong>Motif de la créance:</strong> ${debtor.reason}</p>` : ''}
                 </div>
+                ${hasMultipleItems ? `<div class="items-section"><h4>Détail des créances:</h4>${itemsTableHTML}</div>` : (items[0]?.reason ? `<p><strong>Motif de la créance:</strong> ${items[0].reason}</p>` : '')}
                 <div class="amount-box">
-                    <p><strong>Montant dû:</strong></p>
+                    <p><strong>Montant total dû:</strong></p>
                     <p class="amount-numeric">${amountNumeric}</p>
                     <p class="amount-words">(${amountWordsFormatted} seulement)</p>
                 </div>
@@ -724,7 +909,6 @@ function generateDebtorStatementHTML(debtor) {
                         <span>Il y a des montants/éléments supplémentaires non inclus. Détails: </span>
                     </div>
                     <p style="border-bottom: 1px solid #333; min-height: 60px; margin-top: 0.5rem;"></p>
-                    ${debtor.notes ? `<p style="margin-top: 1rem;"><strong>Notes supplémentaires:</strong> ${debtor.notes}</p>` : ''}
                 </div>
                 <div class="signature-area">
                     <p><strong>Signature du débiteur:</strong> <span class="sig-line"></span></p>
@@ -754,10 +938,10 @@ function generateDebtorStatementHTML(debtor) {
                 owes to me, <strong>${testatorData.full_name || '[Testator Name]'}</strong>, 
                 residing at <strong>${testatorData.address || '[Address]'}</strong>, 
                 as of the date indicated above.</p>
-                ${debtor.reason ? `<p><strong>Reason for debt:</strong> ${debtor.reason}</p>` : ''}
             </div>
+            ${hasMultipleItems ? `<div class="items-section"><h4>Debt Details:</h4>${itemsTableHTML}</div>` : (items[0]?.reason ? `<p><strong>Reason for debt:</strong> ${items[0].reason}</p>` : '')}
             <div class="amount-box">
-                <p><strong>Amount Owed:</strong></p>
+                <p><strong>Total Amount Owed:</strong></p>
                 <p class="amount-numeric">${amountNumeric}</p>
                 <p class="amount-words">(${amountWordsFormatted} Only)</p>
             </div>
@@ -782,7 +966,6 @@ function generateDebtorStatementHTML(debtor) {
                     <span>There are additional amounts/items not included. Details: </span>
                 </div>
                 <p style="border-bottom: 1px solid #333; min-height: 60px; margin-top: 0.5rem;"></p>
-                ${debtor.notes ? `<p style="margin-top: 1rem;"><strong>Additional Notes:</strong> ${debtor.notes}</p>` : ''}
             </div>
             <div class="signature-area">
                 <p><strong>Debtor's Signature:</strong> <span class="sig-line"></span></p>

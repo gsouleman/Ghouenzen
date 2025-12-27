@@ -71,11 +71,18 @@ async function initDB() {
                 testator_id INTEGER,
                 full_name VARCHAR(255) NOT NULL,
                 contact VARCHAR(255),
-                reason TEXT,
-                amount DECIMAL(15,2) DEFAULT 0,
-                notes TEXT,
                 gender VARCHAR(10) DEFAULT 'male',
                 language VARCHAR(10) DEFAULT 'english'
+            )
+        `);
+
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS debtor_items (
+                id SERIAL PRIMARY KEY,
+                debtor_id INTEGER REFERENCES debtors(id) ON DELETE CASCADE,
+                reason TEXT,
+                amount DECIMAL(15,2) DEFAULT 0,
+                notes TEXT
             )
         `);
 
@@ -85,11 +92,18 @@ async function initDB() {
                 testator_id INTEGER,
                 full_name VARCHAR(255) NOT NULL,
                 contact VARCHAR(255),
-                reason TEXT,
-                amount DECIMAL(15,2) DEFAULT 0,
-                notes TEXT,
                 gender VARCHAR(10) DEFAULT 'male',
                 language VARCHAR(10) DEFAULT 'english'
+            )
+        `);
+
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS creditor_items (
+                id SERIAL PRIMARY KEY,
+                creditor_id INTEGER REFERENCES creditors(id) ON DELETE CASCADE,
+                reason TEXT,
+                amount DECIMAL(15,2) DEFAULT 0,
+                notes TEXT
             )
         `);
 
@@ -115,15 +129,45 @@ async function initDB() {
             )
         `);
 
-        // Add gender and language columns if they don't exist (migration)
+        // Migration for new schema
         try {
-            await client.query(`ALTER TABLE debtors ADD COLUMN IF NOT EXISTS gender VARCHAR(10) DEFAULT 'male'`);
-            await client.query(`ALTER TABLE debtors ADD COLUMN IF NOT EXISTS language VARCHAR(10) DEFAULT 'english'`);
-            await client.query(`ALTER TABLE debtors ADD COLUMN IF NOT EXISTS contact VARCHAR(255) DEFAULT ''`);
-            await client.query(`ALTER TABLE creditors ADD COLUMN IF NOT EXISTS gender VARCHAR(10) DEFAULT 'male'`);
-            await client.query(`ALTER TABLE creditors ADD COLUMN IF NOT EXISTS language VARCHAR(10) DEFAULT 'english'`);
-            await client.query(`ALTER TABLE creditors ADD COLUMN IF NOT EXISTS contact VARCHAR(255) DEFAULT ''`);
-            console.log('Migration: gender, language, contact columns added');
+            // Create line items tables if they don't exist
+            await client.query(`
+                CREATE TABLE IF NOT EXISTS debtor_items (
+                    id SERIAL PRIMARY KEY,
+                    debtor_id INTEGER,
+                    reason TEXT,
+                    amount DECIMAL(15,2) DEFAULT 0,
+                    notes TEXT
+                )
+            `);
+            await client.query(`
+                CREATE TABLE IF NOT EXISTS creditor_items (
+                    id SERIAL PRIMARY KEY,
+                    creditor_id INTEGER,
+                    reason TEXT,
+                    amount DECIMAL(15,2) DEFAULT 0,
+                    notes TEXT
+                )
+            `);
+            
+            // Migrate old data if reason/amount/notes columns exist in main tables
+            // Move existing data to items tables
+            await client.query(`
+                INSERT INTO debtor_items (debtor_id, reason, amount, notes)
+                SELECT id, reason, amount, notes FROM debtors 
+                WHERE reason IS NOT NULL OR amount > 0
+                AND NOT EXISTS (SELECT 1 FROM debtor_items WHERE debtor_id = debtors.id)
+            `).catch(() => {});
+            
+            await client.query(`
+                INSERT INTO creditor_items (creditor_id, reason, amount, notes)
+                SELECT id, reason, amount, notes FROM creditors 
+                WHERE reason IS NOT NULL OR amount > 0
+                AND NOT EXISTS (SELECT 1 FROM creditor_items WHERE creditor_id = creditors.id)
+            `).catch(() => {});
+            
+            console.log('Migration: line items tables ready');
         } catch (migrationErr) {
             console.log('Migration note:', migrationErr.message);
         }
@@ -290,8 +334,24 @@ app.get('/api/debtors', async (req, res) => {
     try {
         const testator = await getCurrentTestator();
         if (!testator) return res.json([]);
-        const result = await pool.query('SELECT * FROM debtors WHERE testator_id = $1 ORDER BY id', [testator.id]);
-        res.json(result.rows.map(r => ({ ...r, amount: parseFloat(r.amount) || 0 })));
+        const debtorsResult = await pool.query('SELECT * FROM debtors WHERE testator_id = $1 ORDER BY id', [testator.id]);
+        
+        // Get items for each debtor
+        const debtors = await Promise.all(debtorsResult.rows.map(async (debtor) => {
+            const itemsResult = await pool.query('SELECT * FROM debtor_items WHERE debtor_id = $1 ORDER BY id', [debtor.id]);
+            const items = itemsResult.rows.map(item => ({
+                ...item,
+                amount: parseFloat(item.amount) || 0
+            }));
+            const totalAmount = items.reduce((sum, item) => sum + item.amount, 0);
+            return {
+                ...debtor,
+                items,
+                amount: totalAmount
+            };
+        }));
+        
+        res.json(debtors);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -301,12 +361,26 @@ app.post('/api/debtors', async (req, res) => {
     try {
         const testator = await getCurrentTestator();
         if (!testator) return res.status(400).json({ error: 'No testator' });
-        const { full_name, contact, reason, amount, notes, gender, language } = req.body;
+        const { full_name, contact, gender, language, items } = req.body;
+        
+        // Insert debtor
         const result = await pool.query(
-            'INSERT INTO debtors (testator_id, full_name, contact, reason, amount, notes, gender, language) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id',
-            [testator.id, full_name, contact || '', reason || '', amount || 0, notes || '', gender || 'male', language || 'english']
+            'INSERT INTO debtors (testator_id, full_name, contact, gender, language) VALUES ($1, $2, $3, $4, $5) RETURNING id',
+            [testator.id, full_name, contact || '', gender || 'male', language || 'english']
         );
-        res.json({ id: result.rows[0].id, message: 'Debtor added' });
+        const debtorId = result.rows[0].id;
+        
+        // Insert items
+        if (items && items.length > 0) {
+            for (const item of items) {
+                await pool.query(
+                    'INSERT INTO debtor_items (debtor_id, reason, amount, notes) VALUES ($1, $2, $3, $4)',
+                    [debtorId, item.reason || '', item.amount || 0, item.notes || '']
+                );
+            }
+        }
+        
+        res.json({ id: debtorId, message: 'Debtor added' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -314,11 +388,26 @@ app.post('/api/debtors', async (req, res) => {
 
 app.put('/api/debtors/:id', async (req, res) => {
     try {
-        const { full_name, contact, reason, amount, notes, gender, language } = req.body;
+        const { full_name, contact, gender, language, items } = req.body;
+        
+        // Update debtor
         await pool.query(
-            'UPDATE debtors SET full_name = $1, contact = $2, reason = $3, amount = $4, notes = $5, gender = $6, language = $7 WHERE id = $8',
-            [full_name, contact || '', reason || '', amount || 0, notes || '', gender || 'male', language || 'english', req.params.id]
+            'UPDATE debtors SET full_name = $1, contact = $2, gender = $3, language = $4 WHERE id = $5',
+            [full_name, contact || '', gender || 'male', language || 'english', req.params.id]
         );
+        
+        // Delete existing items and re-insert
+        await pool.query('DELETE FROM debtor_items WHERE debtor_id = $1', [req.params.id]);
+        
+        if (items && items.length > 0) {
+            for (const item of items) {
+                await pool.query(
+                    'INSERT INTO debtor_items (debtor_id, reason, amount, notes) VALUES ($1, $2, $3, $4)',
+                    [req.params.id, item.reason || '', item.amount || 0, item.notes || '']
+                );
+            }
+        }
+        
         res.json({ message: 'Debtor updated' });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -327,6 +416,7 @@ app.put('/api/debtors/:id', async (req, res) => {
 
 app.delete('/api/debtors/:id', async (req, res) => {
     try {
+        await pool.query('DELETE FROM debtor_items WHERE debtor_id = $1', [req.params.id]);
         await pool.query('DELETE FROM debtors WHERE id = $1', [req.params.id]);
         res.json({ message: 'Debtor deleted' });
     } catch (err) {
@@ -339,8 +429,24 @@ app.get('/api/creditors', async (req, res) => {
     try {
         const testator = await getCurrentTestator();
         if (!testator) return res.json([]);
-        const result = await pool.query('SELECT * FROM creditors WHERE testator_id = $1 ORDER BY id', [testator.id]);
-        res.json(result.rows.map(r => ({ ...r, amount: parseFloat(r.amount) || 0 })));
+        const creditorsResult = await pool.query('SELECT * FROM creditors WHERE testator_id = $1 ORDER BY id', [testator.id]);
+        
+        // Get items for each creditor
+        const creditors = await Promise.all(creditorsResult.rows.map(async (creditor) => {
+            const itemsResult = await pool.query('SELECT * FROM creditor_items WHERE creditor_id = $1 ORDER BY id', [creditor.id]);
+            const items = itemsResult.rows.map(item => ({
+                ...item,
+                amount: parseFloat(item.amount) || 0
+            }));
+            const totalAmount = items.reduce((sum, item) => sum + item.amount, 0);
+            return {
+                ...creditor,
+                items,
+                amount: totalAmount
+            };
+        }));
+        
+        res.json(creditors);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -350,12 +456,26 @@ app.post('/api/creditors', async (req, res) => {
     try {
         const testator = await getCurrentTestator();
         if (!testator) return res.status(400).json({ error: 'No testator' });
-        const { full_name, contact, reason, amount, notes, gender, language } = req.body;
+        const { full_name, contact, gender, language, items } = req.body;
+        
+        // Insert creditor
         const result = await pool.query(
-            'INSERT INTO creditors (testator_id, full_name, contact, reason, amount, notes, gender, language) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id',
-            [testator.id, full_name, contact || '', reason || '', amount || 0, notes || '', gender || 'male', language || 'english']
+            'INSERT INTO creditors (testator_id, full_name, contact, gender, language) VALUES ($1, $2, $3, $4, $5) RETURNING id',
+            [testator.id, full_name, contact || '', gender || 'male', language || 'english']
         );
-        res.json({ id: result.rows[0].id, message: 'Creditor added' });
+        const creditorId = result.rows[0].id;
+        
+        // Insert items
+        if (items && items.length > 0) {
+            for (const item of items) {
+                await pool.query(
+                    'INSERT INTO creditor_items (creditor_id, reason, amount, notes) VALUES ($1, $2, $3, $4)',
+                    [creditorId, item.reason || '', item.amount || 0, item.notes || '']
+                );
+            }
+        }
+        
+        res.json({ id: creditorId, message: 'Creditor added' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -363,11 +483,26 @@ app.post('/api/creditors', async (req, res) => {
 
 app.put('/api/creditors/:id', async (req, res) => {
     try {
-        const { full_name, contact, reason, amount, notes, gender, language } = req.body;
+        const { full_name, contact, gender, language, items } = req.body;
+        
+        // Update creditor
         await pool.query(
-            'UPDATE creditors SET full_name = $1, contact = $2, reason = $3, amount = $4, notes = $5, gender = $6, language = $7 WHERE id = $8',
-            [full_name, contact || '', reason || '', amount || 0, notes || '', gender || 'male', language || 'english', req.params.id]
+            'UPDATE creditors SET full_name = $1, contact = $2, gender = $3, language = $4 WHERE id = $5',
+            [full_name, contact || '', gender || 'male', language || 'english', req.params.id]
         );
+        
+        // Delete existing items and re-insert
+        await pool.query('DELETE FROM creditor_items WHERE creditor_id = $1', [req.params.id]);
+        
+        if (items && items.length > 0) {
+            for (const item of items) {
+                await pool.query(
+                    'INSERT INTO creditor_items (creditor_id, reason, amount, notes) VALUES ($1, $2, $3, $4)',
+                    [req.params.id, item.reason || '', item.amount || 0, item.notes || '']
+                );
+            }
+        }
+        
         res.json({ message: 'Creditor updated' });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -376,6 +511,7 @@ app.put('/api/creditors/:id', async (req, res) => {
 
 app.delete('/api/creditors/:id', async (req, res) => {
     try {
+        await pool.query('DELETE FROM creditor_items WHERE creditor_id = $1', [req.params.id]);
         await pool.query('DELETE FROM creditors WHERE id = $1', [req.params.id]);
         res.json({ message: 'Creditor deleted' });
     } catch (err) {
