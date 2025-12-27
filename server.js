@@ -129,9 +129,8 @@ async function initDB() {
             )
         `);
 
-        // Migration for new schema
+        // Create line items tables if they don't exist
         try {
-            // Create line items tables if they don't exist
             await client.query(`
                 CREATE TABLE IF NOT EXISTS debtor_items (
                     id SERIAL PRIMARY KEY,
@@ -150,34 +149,32 @@ async function initDB() {
                     notes TEXT
                 )
             `);
-            
-            // Only migrate old data ONCE - check if migration already happened
-            // by checking if any items exist in the items tables
-            const debtorItemsCheck = await client.query('SELECT COUNT(*) FROM debtor_items');
-            const creditorItemsCheck = await client.query('SELECT COUNT(*) FROM creditor_items');
-            
-            // Only run migration if items tables are empty
-            if (parseInt(debtorItemsCheck.rows[0].count) === 0) {
-                await client.query(`
-                    INSERT INTO debtor_items (debtor_id, reason, amount, notes)
-                    SELECT id, reason, amount, notes FROM debtors 
-                    WHERE reason IS NOT NULL OR amount > 0
-                `).catch(() => {});
-                console.log('Migration: Migrated debtor items from old schema');
-            }
-            
-            if (parseInt(creditorItemsCheck.rows[0].count) === 0) {
-                await client.query(`
-                    INSERT INTO creditor_items (creditor_id, reason, amount, notes)
-                    SELECT id, reason, amount, notes FROM creditors 
-                    WHERE reason IS NOT NULL OR amount > 0
-                `).catch(() => {});
-                console.log('Migration: Migrated creditor items from old schema');
-            }
-            
-            console.log('Migration: line items tables ready');
+            console.log('Line items tables ready');
         } catch (migrationErr) {
             console.log('Migration note:', migrationErr.message);
+        }
+
+        // Remove duplicate items (keeps the one with lowest ID)
+        try {
+            await client.query(`
+                DELETE FROM debtor_items a
+                USING debtor_items b
+                WHERE a.id > b.id 
+                  AND a.debtor_id = b.debtor_id 
+                  AND a.amount = b.amount
+                  AND COALESCE(a.reason, '') = COALESCE(b.reason, '')
+            `);
+            await client.query(`
+                DELETE FROM creditor_items a
+                USING creditor_items b
+                WHERE a.id > b.id 
+                  AND a.creditor_id = b.creditor_id 
+                  AND a.amount = b.amount
+                  AND COALESCE(a.reason, '') = COALESCE(b.reason, '')
+            `);
+            console.log('Duplicate items cleanup completed');
+        } catch (cleanupErr) {
+            console.log('Cleanup note:', cleanupErr.message);
         }
 
         console.log('Database tables initialized successfully');
