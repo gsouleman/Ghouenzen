@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | Al-Wasiyyah</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="dashboard-page">
+    <div class="pattern-overlay"></div>
+    
+    <!-- Navigation -->
+    <nav class="main-nav">
+        <div class="nav-container">
+            <a href="/" class="logo">
+                <span class="logo-icon">☪</span>
+                <span class="logo-text">Al-Wasiyyah</span>
+            </a>
+            <div class="nav-links">
+                <a href="/" class="nav-link">Home</a>
+                <a href="/dashboard" class="nav-link active">Dashboard</a>
+                <a href="/will-clause" class="nav-link">Will Document</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="dashboard">
+        <div class="dashboard-container">
+            <!-- Header -->
+            <header class="dashboard-header">
+                <div class="header-info">
+                    <h1>Estate Management Dashboard</h1>
+                    <p id="testator-name" class="testator-name">
+                        {% if testator %}{{ testator.full_name }}{% else %}No testator registered{% endif %}
+                    </p>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-outline" onclick="resetSession()">New Session</button>
+                    <a href="/will-clause" class="btn btn-primary">View Will Document</a>
+                </div>
+            </header>
+
+            <!-- Summary Cards -->
+            <section class="summary-section">
+                <div class="summary-grid">
+                    <div class="summary-card assets">
+                        <div class="card-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                                <polyline points="9 22 9 12 15 12 15 22"/>
+                            </svg>
+                        </div>
+                        <div class="card-content">
+                            <span class="card-label">Total Assets</span>
+                            <span class="card-value" id="total-assets">0 XAF</span>
+                        </div>
+                    </div>
+                    
+                    <div class="summary-card debtors">
+                        <div class="card-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <line x1="12" y1="1" x2="12" y2="23"/>
+                                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                            </svg>
+                        </div>
+                        <div class="card-content">
+                            <span class="card-label">To Collect (Debtors)</span>
+                            <span class="card-value" id="total-debtors">0 XAF</span>
+                        </div>
+                    </div>
+                    
+                    <div class="summary-card creditors">
+                        <div class="card-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                                <line x1="1" y1="10" x2="23" y2="10"/>
+                            </svg>
+                        </div>
+                        <div class="card-content">
+                            <span class="card-label">Liabilities (Creditors)</span>
+                            <span class="card-value" id="total-creditors">0 XAF</span>
+                        </div>
+                    </div>
+                    
+                    <div class="summary-card net-estate">
+                        <div class="card-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                            </svg>
+                        </div>
+                        <div class="card-content">
+                            <span class="card-label">Net Estate for Distribution</span>
+                            <span class="card-value" id="net-estate">0 XAF</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tabs -->
+            <div class="tabs-container">
+                <div class="tabs">
+                    <button class="tab active" data-tab="testator">Testator</button>
+                    <button class="tab" data-tab="heirs">Heirs</button>
+                    <button class="tab" data-tab="executors">Executors</button>
+                    <button class="tab" data-tab="debtors">Debtors</button>
+                    <button class="tab" data-tab="creditors">Creditors</button>
+                    <button class="tab" data-tab="assets">Assets</button>
+                    <button class="tab" data-tab="inheritance">Inheritance</button>
+                </div>
+
+                <!-- Tab Panels -->
+                <div class="tab-panels">
+                    <!-- Testator Panel -->
+                    <div class="tab-panel active" id="panel-testator">
+                        <div class="panel-header">
+                            <h2>Testator Information</h2>
+                        </div>
+                        <form id="testator-form" class="form">
+                            <div class="form-group">
+                                <label for="testator-fullname">Full Name</label>
+                                <input type="text" id="testator-fullname" placeholder="Enter your full legal name" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="testator-address">Address</label>
+                                <textarea id="testator-address" rows="3" placeholder="Enter your residential address"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Save Testator Information</button>
+                        </form>
+                    </div>
+
+                    <!-- Heirs Panel -->
+                    <div class="tab-panel" id="panel-heirs">
+                        <div class="panel-header">
+                            <h2>Heirs Registry</h2>
+                            <button class="btn btn-primary btn-sm" onclick="showAddModal('heir')">+ Add Heir</button>
+                        </div>
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Relation</th>
+                                        <th>Full Name</th>
+                                        <th>Share Type</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="heirs-table-body">
+                                    <tr class="empty-row"><td colspan="4">No heirs registered</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Executors Panel -->
+                    <div class="tab-panel" id="panel-executors">
+                        <div class="panel-header">
+                            <h2>Executors</h2>
+                            <button class="btn btn-primary btn-sm" onclick="showAddModal('executor')">+ Add Executor</button>
+                        </div>
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Full Name</th>
+                                        <th>Contact</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="executors-table-body">
+                                    <tr class="empty-row"><td colspan="3">No executors registered</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Debtors Panel -->
+                    <div class="tab-panel" id="panel-debtors">
+                        <div class="panel-header">
+                            <h2>Debtors (People Who Owe You)</h2>
+                            <button class="btn btn-primary btn-sm" onclick="showAddModal('debtor')">+ Add Debtor</button>
+                        </div>
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Reason</th>
+                                        <th>Amount (XAF)</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="debtors-table-body">
+                                    <tr class="empty-row"><td colspan="4">No debtors registered</td></tr>
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <td colspan="2"><strong>Total to Collect:</strong></td>
+                                        <td id="debtors-total" class="total-cell">0 XAF</td>
+                                        <td></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Creditors Panel -->
+                    <div class="tab-panel" id="panel-creditors">
+                        <div class="panel-header">
+                            <h2>Creditors (People/Institutions You Owe)</h2>
+                            <button class="btn btn-primary btn-sm" onclick="showAddModal('creditor')">+ Add Creditor</button>
+                        </div>
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Reason</th>
+                                        <th>Amount (XAF)</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="creditors-table-body">
+                                    <tr class="empty-row"><td colspan="4">No creditors registered</td></tr>
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <td colspan="2"><strong>Total Liabilities:</strong></td>
+                                        <td id="creditors-total" class="total-cell liability">0 XAF</td>
+                                        <td></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Assets Panel -->
+                    <div class="tab-panel" id="panel-assets">
+                        <div class="panel-header">
+                            <h2>Assets Inventory</h2>
+                            <button class="btn btn-primary btn-sm" onclick="showAddModal('asset')">+ Add Asset</button>
+                        </div>
+                        
+                        <!-- Immovable Assets -->
+                        <div class="asset-category">
+                            <h3 class="category-title">
+                                <span class="category-icon">🏠</span>
+                                Immovable Property (Land & Buildings)
+                            </h3>
+                            <div class="table-container">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Description</th>
+                                            <th>Location</th>
+                                            <th>Est. Value (XAF)</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="immovable-assets-body">
+                                        <tr class="empty-row"><td colspan="4">No immovable assets</td></tr>
+                                    </tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <td colspan="2"><strong>Subtotal:</strong></td>
+                                            <td id="immovable-total" class="total-cell">0 XAF</td>
+                                            <td></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <!-- Movable Assets -->
+                        <div class="asset-category">
+                            <h3 class="category-title">
+                                <span class="category-icon">🚗</span>
+                                Movable Property (Vehicles & Equipment)
+                            </h3>
+                            <div class="table-container">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Description</th>
+                                            <th>Location</th>
+                                            <th>Est. Value (XAF)</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="movable-assets-body">
+                                        <tr class="empty-row"><td colspan="4">No movable assets</td></tr>
+                                    </tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <td colspan="2"><strong>Subtotal:</strong></td>
+                                            <td id="movable-total" class="total-cell">0 XAF</td>
+                                            <td></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <!-- Other Assets -->
+                        <div class="asset-category">
+                            <h3 class="category-title">
+                                <span class="category-icon">💰</span>
+                                Other Assets (Bank Accounts, Investments)
+                            </h3>
+                            <div class="table-container">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Description</th>
+                                            <th>Location</th>
+                                            <th>Est. Value (XAF)</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="other-assets-body">
+                                        <tr class="empty-row"><td colspan="4">No other assets</td></tr>
+                                    </tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <td colspan="2"><strong>Subtotal:</strong></td>
+                                            <td id="other-total" class="total-cell">0 XAF</td>
+                                            <td></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <div class="grand-total-box">
+                            <span class="grand-total-label">Grand Total Estate Value:</span>
+                            <span class="grand-total-value" id="assets-grand-total">0 XAF</span>
+                        </div>
+                    </div>
+
+                    <!-- Inheritance Panel -->
+                    <div class="tab-panel" id="panel-inheritance">
+                        <div class="panel-header">
+                            <h2>Islamic Inheritance Distribution (Al-Faraid)</h2>
+                        </div>
+                        
+                        <div class="inheritance-summary">
+                            <div class="calc-row">
+                                <span class="calc-label">A. Total Estate Value</span>
+                                <span class="calc-value" id="calc-assets">0 XAF</span>
+                            </div>
+                            <div class="calc-row">
+                                <span class="calc-label">B. Recoverable from Debtors</span>
+                                <span class="calc-value positive" id="calc-debtors">+ 0 XAF</span>
+                            </div>
+                            <div class="calc-row subtotal">
+                                <span class="calc-label">C. Total Available Pool (A + B)</span>
+                                <span class="calc-value" id="calc-pool">0 XAF</span>
+                            </div>
+                            <div class="calc-row">
+                                <span class="calc-label">D. Liabilities to Pay</span>
+                                <span class="calc-value negative" id="calc-liabilities">- 0 XAF</span>
+                            </div>
+                            <div class="calc-row final">
+                                <span class="calc-label">E. Net Estate for Distribution</span>
+                                <span class="calc-value" id="calc-net">0 XAF</span>
+                            </div>
+                        </div>
+                        
+                        <div class="inheritance-distribution">
+                            <h3>Heir Shares</h3>
+                            <div class="table-container">
+                                <table class="data-table inheritance-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Heir</th>
+                                            <th>Relation</th>
+                                            <th>Share Fraction</th>
+                                            <th>Amount (XAF)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="inheritance-table-body">
+                                        <tr class="empty-row"><td colspan="4">Add heirs and assets to see distribution</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <div class="inheritance-note">
+                            <p><strong>Note:</strong> This calculation is based on standard Islamic inheritance rules (Al-Faraid). For the scenario with wife, mother, sons, and daughters:</p>
+                            <ul>
+                                <li>Wife receives <strong>1/8</strong> (when there are children)</li>
+                                <li>Mother receives <strong>1/6</strong> (when there are children)</li>
+                                <li>Sons and daughters share the residue (Asaba), with each son receiving <strong>2x</strong> a daughter's share</li>
+                            </ul>
+                            <p class="disclaimer">Please consult a qualified Islamic scholar for final verification.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Add/Edit Modal -->
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal" id="modal">
+            <div class="modal-header">
+                <h3 id="modal-title">Add Item</h3>
+                <button class="modal-close" onclick="closeModal()">×</button>
+            </div>
+            <div class="modal-body" id="modal-body">
+                <!-- Dynamic content -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+</html>
