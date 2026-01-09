@@ -193,16 +193,25 @@
                     </div>
 
                     <div class="worksheet">
-                        <h3>Section C: Assets (To Be Liquidated)</h3>
+                        <h3>Section C: Assets to be Liquidated for Debt</h3>
                         <table>
                             <thead><tr><th>#</th><th>Description</th><th>Location</th><th>Value (XAF)</th></tr></thead>
-                            <tbody id="will-assets"><tr><td colspan="4"><em>No assets</em></td></tr></tbody>
-                            <tfoot><tr><td colspan="3"><strong>Grand Total:</strong></td><td id="will-assets-total"><strong>0 XAF</strong></td></tr></tfoot>
+                            <tbody id="will-assets"><tr><td colspan="4"><em>No assets for liquidation</em></td></tr></tbody>
+                            <tfoot><tr><td colspan="3"><strong>Total Liquidation Value:</strong></td><td id="will-assets-total"><strong>0 XAF</strong></td></tr></tfoot>
+                        </table>
+                    </div>
+
+                    <div class="worksheet">
+                        <h3>Section D: Reserved Assets (Not to be Liquidated)</h3>
+                        <table>
+                            <thead><tr><th>#</th><th>Description</th><th>Location</th><th>Value (XAF)</th></tr></thead>
+                            <tbody id="will-assets-reserved"><tr><td colspan="4"><em>No reserved assets</em></td></tr></tbody>
+                            <tfoot><tr><td colspan="3"><strong>Total Reserved Value:</strong></td><td id="will-assets-reserved-total"><strong>0 XAF</strong></td></tr></tfoot>
                         </table>
                     </div>
 
                     <div class="worksheet calculation">
-                        <h3>Section D: Net Estate Calculation</h3>
+                        <h3>Section E: Net Estate Calculation</h3>
                         <table class="calc-table">
                             <tr><td>A. Total Estate Value</td><td id="will-calc-a">0 XAF</td></tr>
                             <tr><td>B. Total from Debtors</td><td id="will-calc-b">+ 0 XAF</td></tr>
@@ -390,10 +399,32 @@
         async function loadAssets() {
             const res = await fetch('/api/assets');
             const data = await res.json();
-            const el = document.getElementById('will-assets');
-            if (data.length > 0) {
-                el.innerHTML = data.map((a, i) => `<tr><td>${i+1}</td><td>${a.description}</td><td>${a.location || '-'}</td><td>${formatCurrencyFull(a.estimated_value)}</td></tr>`).join('');
+            
+            // Filter assets
+            const liquidated = data.filter(a => a.is_liquidated !== false);
+            const reserved = data.filter(a => a.is_liquidated === false);
+
+            // Render Liquidated
+            const elLiq = document.getElementById('will-assets');
+            if (liquidated.length > 0) {
+                elLiq.innerHTML = liquidated.map((a, i) => `<tr><td>${i+1}</td><td>${a.description}</td><td>${a.location || '-'}</td><td>${formatCurrencyFull(a.estimated_value)}</td></tr>`).join('');
+            } else {
+                elLiq.innerHTML = '<tr><td colspan="4"><em>No assets for liquidation</em></td></tr>';
             }
+            // Update liquidated total explicitly (though summary has it, we can recalc or leave it if all are 0)
+            // But summary.totals.assets includes ALL. If non-liquidated are 0, then summary.totals.assets == liquidated total.
+            // So will-assets-total (populated from summary) is correct.
+
+            // Render Reserved
+            const elRes = document.getElementById('will-assets-reserved');
+            if (reserved.length > 0) {
+                elRes.innerHTML = reserved.map((a, i) => `<tr><td>${i+1}</td><td>${a.description}</td><td>${a.location || '-'}</td><td>${formatCurrencyFull(a.estimated_value)}</td></tr>`).join('');
+            } else {
+                elRes.innerHTML = '<tr><td colspan="4"><em>No reserved assets</em></td></tr>';
+            }
+            // Calc reserved total (should be 0 based on logic, but let's sum just in case)
+            const reservedTotal = reserved.reduce((s, a) => s + (parseFloat(a.estimated_value) || 0), 0);
+            document.getElementById('will-assets-reserved-total').innerHTML = '<strong>' + formatCurrencyFull(reservedTotal) + '</strong>';
         }
 
         function loadInheritance(inheritance) {

@@ -115,9 +115,27 @@ async function initDB() {
                 description TEXT NOT NULL,
                 location VARCHAR(255),
                 estimated_value DECIMAL(15,2) DEFAULT 0,
+                is_liquidated BOOLEAN DEFAULT TRUE,
                 notes TEXT
             )
         `);
+
+        // Migration: Add is_liquidated column if it doesn't exist
+        try {
+            await client.query(`
+                DO $$ 
+                BEGIN 
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='assets' AND column_name='is_liquidated') THEN 
+                        ALTER TABLE assets ADD COLUMN is_liquidated BOOLEAN DEFAULT TRUE; 
+                    END IF; 
+                END $$;
+            `);
+        } catch (alterErr) {
+            // Fallback for non-postgres or specific errors, though 'DO' is standard PG
+            try {
+                await client.query('ALTER TABLE assets ADD COLUMN IF NOT EXISTS is_liquidated BOOLEAN DEFAULT TRUE');
+            } catch (e) { console.log('Column migration note:', e.message); }
+        }
 
         await client.query(`
             CREATE TABLE IF NOT EXISTS will_edits (
@@ -540,10 +558,10 @@ app.post('/api/assets', async (req, res) => {
     try {
         const testator = await getCurrentTestator();
         if (!testator) return res.status(400).json({ error: 'No testator' });
-        const { category, description, location, estimated_value, notes } = req.body;
+        const { category, description, location, estimated_value, notes, is_liquidated } = req.body;
         const result = await pool.query(
-            'INSERT INTO assets (testator_id, category, description, location, estimated_value, notes) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
-            [testator.id, category, description, location || '', estimated_value || 0, notes || '']
+            'INSERT INTO assets (testator_id, category, description, location, estimated_value, notes, is_liquidated) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id',
+            [testator.id, category, description, location || '', estimated_value || 0, notes || '', is_liquidated !== undefined ? is_liquidated : true]
         );
         res.json({ id: result.rows[0].id, message: 'Asset added' });
     } catch (err) {
@@ -553,10 +571,10 @@ app.post('/api/assets', async (req, res) => {
 
 app.put('/api/assets/:id', async (req, res) => {
     try {
-        const { category, description, location, estimated_value, notes } = req.body;
+        const { category, description, location, estimated_value, notes, is_liquidated } = req.body;
         await pool.query(
-            'UPDATE assets SET category = $1, description = $2, location = $3, estimated_value = $4, notes = $5 WHERE id = $6',
-            [category, description, location || '', estimated_value || 0, notes || '', req.params.id]
+            'UPDATE assets SET category = $1, description = $2, location = $3, estimated_value = $4, notes = $5, is_liquidated = $6 WHERE id = $7',
+            [category, description, location || '', estimated_value || 0, notes || '', is_liquidated !== undefined ? is_liquidated : true, req.params.id]
         );
         res.json({ message: 'Asset updated' });
     } catch (err) {
@@ -770,8 +788,8 @@ app.post('/api/load-demo', async (req, res) => {
         ];
         for (const a of assetsData) {
             await client.query(
-                'INSERT INTO assets (testator_id, category, description, location, estimated_value, notes) VALUES ($1, $2, $3, $4, $5, $6)',
-                [testatorId, a[0], a[1], a[2], a[3], a[4]]
+                'INSERT INTO assets (testator_id, category, description, location, estimated_value, notes, is_liquidated) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+                [testatorId, a[0], a[1], a[2], a[3], a[4], true]
             );
         }
 

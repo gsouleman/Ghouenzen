@@ -56,7 +56,7 @@ async function loadAllData() {
             document.getElementById('testator-address').value = testator.address || '';
             document.getElementById('testator-display').textContent = testator.full_name || 'No testator registered';
         }
-        
+
         // Then get summary
         const res = await fetch('/api/summary');
         if (res.ok) {
@@ -64,7 +64,7 @@ async function loadAllData() {
             updateSummary(data);
             updateInheritance(data);
         }
-        
+
         await loadHeirs();
         await loadExecutors();
         await loadDebtors();
@@ -90,10 +90,10 @@ function updateInheritance(data) {
     document.getElementById('calc-pool').textContent = formatCurrency(t.total_pool);
     document.getElementById('calc-liabilities').textContent = '- ' + formatCurrency(t.creditors);
     document.getElementById('calc-net').textContent = formatCurrency(t.net_estate);
-    
+
     const tbody = document.getElementById('inheritance-tbody');
     if (data.inheritance?.shares?.length > 0) {
-        tbody.innerHTML = data.inheritance.shares.map(s => 
+        tbody.innerHTML = data.inheritance.shares.map(s =>
             `<tr><td>${s.name}</td><td>${s.relation}</td><td>${s.fraction}</td><td>${formatCurrency(s.amount)}</td></tr>`
         ).join('');
     } else {
@@ -120,7 +120,7 @@ async function loadHeirs() {
                 </td>
             </tr>
         `).join('');
-    } catch (err) {}
+    } catch (err) { }
 }
 
 async function loadExecutors() {
@@ -141,7 +141,7 @@ async function loadExecutors() {
                 </td>
             </tr>
         `).join('');
-    } catch (err) {}
+    } catch (err) { }
 }
 
 async function loadDebtors() {
@@ -170,7 +170,7 @@ async function loadDebtors() {
             </tr>
         `).join('');
         document.getElementById('debtors-total').textContent = formatCurrency(debtors.reduce((s, d) => s + d.amount, 0));
-    } catch (err) {}
+    } catch (err) { }
 }
 
 async function loadCreditors() {
@@ -199,7 +199,7 @@ async function loadCreditors() {
             </tr>
         `).join('');
         document.getElementById('creditors-total').textContent = formatCurrency(creditors.reduce((s, c) => s + c.amount, 0));
-    } catch (err) {}
+    } catch (err) { }
 }
 
 async function loadAssets() {
@@ -209,7 +209,7 @@ async function loadAssets() {
         renderAssets('movable-tbody', assets.filter(a => a.category === 'movable'), 'movable-total');
         renderAssets('other-tbody', assets.filter(a => a.category === 'other'), 'other-total');
         document.getElementById('assets-grand-total').textContent = formatCurrency(assets.reduce((s, a) => s + a.estimated_value, 0));
-    } catch (err) {}
+    } catch (err) { }
 }
 
 function renderAssets(tbodyId, assets, totalId) {
@@ -357,10 +357,41 @@ function showModal(type, data = null) {
             </div>
             <div class="form-group"><label>Description</label><input type="text" id="f-description" required></div>
             <div class="form-group"><label>Location</label><input type="text" id="f-location"></div>
+            
+            <div class="form-group" style="background: #fdf6e7; padding: 10px; border-radius: 6px; border: 1px solid #e0cca7; margin-bottom: 1rem;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <input type="checkbox" id="f-is-liquidated" checked style="width: auto; margin: 0;">
+                    <label for="f-is-liquidated" style="margin: 0; font-weight: bold; cursor: pointer;">Liquidate to pay debt?</label>
+                </div>
+                <p style="margin: 5px 0 0 25px; font-size: 0.8rem; color: #666;">If unchecked, asset value will be 0 for debt payment.</p>
+            </div>
+
             <div class="form-group"><label>Estimated Value (XAF)</label><input type="number" id="f-value" required></div>
             <div class="form-group"><label>Notes</label><textarea id="f-notes" rows="2"></textarea></div>
             <button type="submit" class="btn btn-primary">${isEdit ? 'Update' : 'Add'} Asset</button>
-        </form>`
+        </form>`,
+        setupAssetListeners: () => {
+            const cb = document.getElementById('f-is-liquidated');
+            const val = document.getElementById('f-value');
+            if (cb && val) {
+                cb.addEventListener('change', () => {
+                    if (!cb.checked) {
+                        val.dataset.oldValue = val.value; // Optional: try to remember
+                        val.value = 0;
+                        // val.readOnly = true; // User might want to edit it to 0 specifically? Or force it.
+                        // "value should be Zero (0) automatically"
+                        val.readOnly = true;
+                        val.style.backgroundColor = "#eee";
+                    } else {
+                        val.readOnly = false;
+                        val.style.backgroundColor = "";
+                        if (val.value == 0 && val.dataset.oldValue) val.value = val.dataset.oldValue;
+                    }
+                });
+                // Trigger once to set state
+                if (!cb.checked) { val.value = 0; val.readOnly = true; val.style.backgroundColor = "#eee"; }
+            }
+        }
     };
 
     title.textContent = `${isEdit ? 'Edit' : 'Add'} ${capitalize(type)}`;
@@ -371,7 +402,7 @@ function showModal(type, data = null) {
     if (data) {
         setTimeout(() => fillForm(type, data), 50);
     }
-    
+
     // Setup line item total calculation
     if (type === 'debtor' || type === 'creditor') {
         setTimeout(() => {
@@ -379,6 +410,11 @@ function showModal(type, data = null) {
                 input.addEventListener('input', updateItemsTotal);
             });
         }, 100);
+    }
+
+    // Setup asset listeners
+    if (type === 'asset' && forms.setupAssetListeners) {
+        setTimeout(forms.setupAssetListeners, 100);
     }
 
     document.getElementById('modal-form').onsubmit = (e) => handleSubmit(e, type, data?.id);
@@ -401,7 +437,7 @@ function addLineItem(type) {
         </div>
     `;
     container.insertAdjacentHTML('beforeend', itemHTML);
-    
+
     // Add event listener for new amount input
     const newAmountInput = container.lastElementChild.querySelector('.item-amount');
     newAmountInput.addEventListener('input', updateItemsTotal);
@@ -439,7 +475,7 @@ function getLineItems() {
 }
 
 function fillForm(type, data) {
-    switch(type) {
+    switch (type) {
         case 'heir':
             document.getElementById('f-relation').value = data.relation;
             document.getElementById('f-name').value = data.full_name;
@@ -454,11 +490,11 @@ function fillForm(type, data) {
             document.getElementById('f-gender').value = data.gender || 'male';
             document.getElementById('f-language').value = data.language || 'english';
             document.getElementById('f-contact').value = data.contact || '';
-            
+
             // Fill line items
             const container = document.getElementById('line-items-container');
             container.innerHTML = '';
-            
+
             const items = data.items && data.items.length > 0 ? data.items : [{ reason: '', amount: 0, notes: '' }];
             items.forEach((item, index) => {
                 const itemHTML = `
@@ -473,7 +509,7 @@ function fillForm(type, data) {
                 `;
                 container.insertAdjacentHTML('beforeend', itemHTML);
             });
-            
+
             // Add event listeners and update total
             document.querySelectorAll('.item-amount').forEach(input => {
                 input.addEventListener('input', updateItemsTotal);
@@ -486,6 +522,12 @@ function fillForm(type, data) {
             document.getElementById('f-location').value = data.location || '';
             document.getElementById('f-value').value = data.estimated_value;
             document.getElementById('f-notes').value = data.notes || '';
+            const liqCb = document.getElementById('f-is-liquidated');
+            if (liqCb) {
+                liqCb.checked = data.is_liquidated !== false; // Default true
+                // Trigger change event to update readonly state
+                liqCb.dispatchEvent(new Event('change'));
+            }
             break;
     }
 }
@@ -493,19 +535,19 @@ function fillForm(type, data) {
 async function handleSubmit(e, type, id) {
     e.preventDefault();
     let data = {};
-    
-    switch(type) {
+
+    switch (type) {
         case 'heir':
             const rel = document.getElementById('f-relation').value;
-            data = { relation: rel, full_name: document.getElementById('f-name').value, share_type: ['wife','mother','father'].includes(rel) ? 'fixed' : 'residue' };
+            data = { relation: rel, full_name: document.getElementById('f-name').value, share_type: ['wife', 'mother', 'father'].includes(rel) ? 'fixed' : 'residue' };
             break;
         case 'executor':
             data = { full_name: document.getElementById('f-name').value, contact: document.getElementById('f-contact').value };
             break;
         case 'debtor':
         case 'creditor':
-            data = { 
-                full_name: document.getElementById('f-name').value, 
+            data = {
+                full_name: document.getElementById('f-name').value,
                 gender: document.getElementById('f-gender').value,
                 language: document.getElementById('f-language').value,
                 contact: document.getElementById('f-contact').value,
@@ -513,7 +555,15 @@ async function handleSubmit(e, type, id) {
             };
             break;
         case 'asset':
-            data = { category: document.getElementById('f-category').value, description: document.getElementById('f-description').value, location: document.getElementById('f-location').value, estimated_value: parseFloat(document.getElementById('f-value').value) || 0, notes: document.getElementById('f-notes').value };
+            const isLiq = document.getElementById('f-is-liquidated').checked;
+            data = {
+                category: document.getElementById('f-category').value,
+                description: document.getElementById('f-description').value,
+                location: document.getElementById('f-location').value,
+                estimated_value: parseFloat(document.getElementById('f-value').value) || 0,
+                notes: document.getElementById('f-notes').value,
+                is_liquidated: isLiq
+            };
             break;
     }
 
@@ -564,10 +614,10 @@ function formatCurrencyXAF(amount) {
 
 function numberToWordsEnglish(num) {
     if (num === 0) return 'zero';
-    
+
     const ones = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine',
-                 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen',
-                 'seventeen', 'eighteen', 'nineteen'];
+        'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen',
+        'seventeen', 'eighteen', 'nineteen'];
     const tens = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
     const scales = ['', 'thousand', 'million', 'billion'];
 
@@ -597,10 +647,10 @@ function numberToWordsEnglish(num) {
 
 function numberToWordsFrench(num) {
     if (num === 0) return 'zéro';
-    
+
     const ones = ['', 'un', 'deux', 'trois', 'quatre', 'cinq', 'six', 'sept', 'huit', 'neuf',
-                 'dix', 'onze', 'douze', 'treize', 'quatorze', 'quinze', 'seize',
-                 'dix-sept', 'dix-huit', 'dix-neuf'];
+        'dix', 'onze', 'douze', 'treize', 'quatorze', 'quinze', 'seize',
+        'dix-sept', 'dix-huit', 'dix-neuf'];
     const tens = ['', '', 'vingt', 'trente', 'quarante', 'cinquante', 'soixante', 'soixante', 'quatre-vingt', 'quatre-vingt'];
 
     function convertGroup(n) {
@@ -669,10 +719,10 @@ function generateCreditorStatementHTML(creditor) {
     const amountNumeric = formatCurrencyXAF(totalAmount);
     const amountWords = lang === 'french' ? numberToWordsFrench(totalAmount) : numberToWordsEnglish(totalAmount);
     const amountWordsFormatted = amountWords.charAt(0).toUpperCase() + amountWords.slice(1) + (lang === 'french' ? ' Francs CFA' : ' CFA Francs');
-    
+
     const items = creditor.items || [];
     const hasMultipleItems = items.length > 1;
-    
+
     // Generate items table HTML
     const itemsTableHTML = items.length > 0 ? `
         <table class="items-table" style="width: 100%; border-collapse: collapse; margin: 1rem 0;">
@@ -827,10 +877,10 @@ function generateDebtorStatementHTML(debtor) {
     const amountNumeric = formatCurrencyXAF(totalAmount);
     const amountWords = lang === 'french' ? numberToWordsFrench(totalAmount) : numberToWordsEnglish(totalAmount);
     const amountWordsFormatted = amountWords.charAt(0).toUpperCase() + amountWords.slice(1) + (lang === 'french' ? ' Francs CFA' : ' CFA Francs');
-    
+
     const items = debtor.items || [];
     const hasMultipleItems = items.length > 1;
-    
+
     // Generate items table HTML
     const itemsTableHTML = items.length > 0 ? `
         <table class="items-table" style="width: 100%; border-collapse: collapse; margin: 1rem 0;">
