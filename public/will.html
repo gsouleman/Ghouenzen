@@ -1,55 +1,234 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Will Document | Al-Wasiyyah</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Outfit:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="/css/style.css">
     <style>
-        .editable-section { position: relative; }
-        .edit-btn { position: absolute; top: 0; right: 0; background: var(--primary); color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 4px; cursor: pointer; font-size: 0.75rem; opacity: 0.7; transition: opacity 0.2s; }
-        .edit-btn:hover { opacity: 1; }
-        .editable-content { min-height: 1.5em; }
-        .editable-content:focus { outline: 2px solid var(--gold); background: #fffef5; padding: 0.5rem; border-radius: 4px; }
-        .creditor-statement-btn { background: var(--primary-light); color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 4px; cursor: pointer; font-size: 0.75rem; margin-left: 0.5rem; }
-        .creditor-statement-btn:hover { background: var(--primary); }
-        @media print { .edit-btn, .creditor-statement-btn { display: none !important; } }
-        
+        .editable-section {
+            position: relative;
+        }
+
+        .edit-btn {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+
+        .edit-btn:hover {
+            opacity: 1;
+        }
+
+        .editable-content {
+            min-height: 1.5em;
+        }
+
+        .editable-content:focus {
+            outline: 2px solid var(--gold);
+            background: #fffef5;
+            padding: 0.5rem;
+            border-radius: 4px;
+        }
+
+        .creditor-statement-btn {
+            background: var(--primary-light);
+            color: white;
+            border: none;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            margin-left: 0.5rem;
+        }
+
+        .creditor-statement-btn:hover {
+            background: var(--primary);
+        }
+
+        @media print {
+
+            .edit-btn,
+            .creditor-statement-btn {
+                display: none !important;
+            }
+        }
+
         /* Creditor Statement Styles */
-        .statement-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 3000; padding: 1rem; }
-        .statement-overlay.active { display: flex; }
-        .statement-container { background: white; max-width: 800px; width: 100%; max-height: 90vh; overflow-y: auto; border-radius: 12px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); }
-        .statement-header { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); background: var(--bg-warm); }
-        .statement-header h3 { margin: 0; color: var(--primary-dark); }
-        .statement-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-light); }
-        .statement-body { padding: 2rem; }
-        .statement-actions { padding: 1rem 1.5rem; border-top: 1px solid var(--border); display: flex; gap: 1rem; justify-content: flex-end; }
-        
+        .statement-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+            padding: 1rem;
+        }
+
+        .statement-overlay.active {
+            display: flex;
+        }
+
+        .statement-container {
+            background: white;
+            max-width: 800px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            border-radius: 12px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+        }
+
+        .statement-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-warm);
+        }
+
+        .statement-header h3 {
+            margin: 0;
+            color: var(--primary-dark);
+        }
+
+        .statement-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-light);
+        }
+
+        .statement-body {
+            padding: 2rem;
+        }
+
+        .statement-actions {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+        }
+
         /* Print Statement Styles */
-        .print-statement { font-family: var(--font-body); line-height: 1.8; }
-        .print-statement .letterhead { text-align: center; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 2px solid var(--primary); }
-        .print-statement .letterhead h2 { color: var(--primary-dark); margin-bottom: 0.25rem; }
-        .print-statement .date-line { text-align: right; margin-bottom: 2rem; }
-        .print-statement .recipient { margin-bottom: 2rem; }
-        .print-statement .subject { font-weight: 600; margin-bottom: 1.5rem; text-decoration: underline; }
-        .print-statement .body-text { margin-bottom: 1.5rem; text-align: justify; }
-        .print-statement .amount-box { background: var(--bg-warm); padding: 1rem; border-radius: 8px; margin: 1.5rem 0; border-left: 4px solid var(--gold); }
-        .print-statement .amount-numeric { font-size: 1.25rem; font-weight: 700; color: var(--primary-dark); }
-        .print-statement .amount-words { font-style: italic; color: var(--text-medium); }
-        .print-statement .confirmation-box { background: #fff9e6; padding: 1.5rem; border: 2px dashed var(--gold); border-radius: 8px; margin: 2rem 0; }
-        .print-statement .confirmation-box h4 { margin-bottom: 1rem; color: var(--primary-dark); }
-        .print-statement .confirm-line { display: flex; gap: 1rem; margin-bottom: 0.75rem; align-items: center; }
-        .print-statement .confirm-checkbox { width: 20px; height: 20px; border: 2px solid var(--text-dark); display: inline-block; }
-        .print-statement .signature-area { margin-top: 3rem; }
-        .print-statement .sig-line { border-bottom: 1px solid var(--text-dark); min-width: 200px; display: inline-block; margin-left: 1rem; }
+        .print-statement {
+            font-family: var(--font-body);
+            line-height: 1.8;
+        }
+
+        .print-statement .letterhead {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--primary);
+        }
+
+        .print-statement .letterhead h2 {
+            color: var(--primary-dark);
+            margin-bottom: 0.25rem;
+        }
+
+        .print-statement .date-line {
+            text-align: right;
+            margin-bottom: 2rem;
+        }
+
+        .print-statement .recipient {
+            margin-bottom: 2rem;
+        }
+
+        .print-statement .subject {
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            text-decoration: underline;
+        }
+
+        .print-statement .body-text {
+            margin-bottom: 1.5rem;
+            text-align: justify;
+        }
+
+        .print-statement .amount-box {
+            background: var(--bg-warm);
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+            border-left: 4px solid var(--gold);
+        }
+
+        .print-statement .amount-numeric {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--primary-dark);
+        }
+
+        .print-statement .amount-words {
+            font-style: italic;
+            color: var(--text-medium);
+        }
+
+        .print-statement .confirmation-box {
+            background: #fff9e6;
+            padding: 1.5rem;
+            border: 2px dashed var(--gold);
+            border-radius: 8px;
+            margin: 2rem 0;
+        }
+
+        .print-statement .confirmation-box h4 {
+            margin-bottom: 1rem;
+            color: var(--primary-dark);
+        }
+
+        .print-statement .confirm-line {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 0.75rem;
+            align-items: center;
+        }
+
+        .print-statement .confirm-checkbox {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--text-dark);
+            display: inline-block;
+        }
+
+        .print-statement .signature-area {
+            margin-top: 3rem;
+        }
+
+        .print-statement .sig-line {
+            border-bottom: 1px solid var(--text-dark);
+            min-width: 200px;
+            display: inline-block;
+            margin-left: 1rem;
+        }
     </style>
 </head>
+
 <body class="will-page">
-    <div class="pattern-overlay"></div>
-    
+
+
     <nav class="navbar no-print">
         <div class="nav-container">
             <a href="/" class="logo">
@@ -86,14 +265,16 @@
                         residing at <span id="will-address">_______________</span>,
                         being of sound mind and memory.
                     </p>
-                    <div id="intro-extra" class="editable-content" contenteditable="false" data-placeholder="Click edit to add additional introduction text..."></div>
+                    <div id="intro-extra" class="editable-content" contenteditable="false"
+                        data-placeholder="Click edit to add additional introduction text..."></div>
                 </section>
 
                 <section class="will-section editable-section">
                     <button class="edit-btn no-print" onclick="toggleEdit('shahada')">✏️ Edit</button>
                     <h2>1. DECLARATION OF FAITH (Shahada)</h2>
                     <div id="shahada-content" class="editable-content" contenteditable="false">
-                        <p>I bear witness that there is no god but Allah, and I bear witness that Muhammad (peace be upon him) is His servant and messenger.</p>
+                        <p>I bear witness that there is no god but Allah, and I bear witness that Muhammad (peace be
+                            upon him) is His servant and messenger.</p>
                     </div>
                 </section>
 
@@ -101,22 +282,28 @@
                     <button class="edit-btn no-print" onclick="toggleEdit('executors')">✏️ Edit</button>
                     <h2>2. APPOINTMENT OF EXECUTOR(S)</h2>
                     <p>I appoint the following person(s) as the executor(s) of my will:</p>
-                    <ul id="will-executors"><li><em>No executors designated</em></li></ul>
-                    <div id="executors-extra" class="editable-content" contenteditable="false" data-placeholder="Click edit to add additional executor instructions..."></div>
-                    <p>They are to act with justice, in consultation with a qualified Islamic scholar, to ensure the execution of my will according to Islamic law (Shariah).</p>
+                    <ul id="will-executors">
+                        <li><em>No executors designated</em></li>
+                    </ul>
+                    <div id="executors-extra" class="editable-content" contenteditable="false"
+                        data-placeholder="Click edit to add additional executor instructions..."></div>
+                    <p>They are to act with justice, in consultation with a qualified Islamic scholar, to ensure the
+                        execution of my will according to Islamic law (Shariah).</p>
                 </section>
 
                 <section class="will-section editable-section">
                     <button class="edit-btn no-print" onclick="toggleEdit('debts')">✏️ Edit</button>
                     <h2>3. SETTLEMENT OF DEBTS AND OBLIGATIONS</h2>
                     <div id="debts-content" class="editable-content" contenteditable="false">
-                        <p class="emphasis">MY FIRST AND BINDING INSTRUCTION is that all my lawful debts and obligations must be settled fully from my estate before any distribution to heirs.</p>
+                        <p class="emphasis">MY FIRST AND BINDING INSTRUCTION is that all my lawful debts and obligations
+                            must be settled fully from my estate before any distribution to heirs.</p>
                         <p>The attached "Estate Management Worksheet" forms an integral part of this will.</p>
                         <p>My executors must:</p>
                         <ol type="a">
                             <li>Identify, verify, and pay all creditors from <strong>Section B</strong></li>
                             <li>Collect all debts owed to me from <strong>Section A</strong></li>
-                            <li><strong>LIQUIDATE (SELL)</strong> assets from <strong>Section C</strong> to settle debts</li>
+                            <li><strong>LIQUIDATE (SELL)</strong> assets from <strong>Section C</strong> to settle debts
+                            </li>
                         </ol>
                         <p class="emphasis">THE PRIORITY IS THE COMPLETE ELIMINATION OF DEBT FROM THE ESTATE.</p>
                     </div>
@@ -126,7 +313,9 @@
                     <button class="edit-btn no-print" onclick="toggleEdit('bequests')">✏️ Edit</button>
                     <h2>4. BEQUESTS (Wasiyyah)</h2>
                     <div id="bequests-content" class="editable-content" contenteditable="false">
-                        <p>After the full settlement of all debts, a bequest of <strong>NOT EXCEEDING ONE-THIRD (1/3)</strong> of the remaining net estate may be made to non-heirs as specified below:</p>
+                        <p>After the full settlement of all debts, a bequest of <strong>NOT EXCEEDING ONE-THIRD
+                                (1/3)</strong> of the remaining net estate may be made to non-heirs as specified below:
+                        </p>
                         <div class="blank-line">Beneficiary: _______________________________________________</div>
                         <p class="note"><em>If no bequest is specified above, this clause is void.</em></p>
                     </div>
@@ -135,11 +324,17 @@
                 <section class="will-section editable-section">
                     <button class="edit-btn no-print" onclick="toggleEdit('distribution')">✏️ Edit</button>
                     <h2>5. DISTRIBUTION OF RESIDUAL ESTATE (Al-Faraid)</h2>
-                    <p class="emphasis">ONLY AFTER the full settlement of debts and any valid bequest, the remainder shall be distributed among my legal heirs according to Islamic laws of inheritance (Al-Faraid).</p>
+                    <p class="emphasis">ONLY AFTER the full settlement of debts and any valid bequest, the remainder
+                        shall be distributed among my legal heirs according to Islamic laws of inheritance (Al-Faraid).
+                    </p>
                     <p>My known heirs at the time of this will are:</p>
-                    <div class="heirs-box" id="will-heirs"><p><em>No heirs registered</em></p></div>
-                    <div id="distribution-extra" class="editable-content" contenteditable="false" data-placeholder="Click edit to add additional distribution instructions..."></div>
-                    <p>The specific shares shall be calculated by a qualified Islamic legal authority based on the <strong>NET ESTATE VALUE</strong>.</p>
+                    <div class="heirs-box" id="will-heirs">
+                        <p><em>No heirs registered</em></p>
+                    </div>
+                    <div id="distribution-extra" class="editable-content" contenteditable="false"
+                        data-placeholder="Click edit to add additional distribution instructions..."></div>
+                    <p>The specific shares shall be calculated by a qualified Islamic legal authority based on the
+                        <strong>NET ESTATE VALUE</strong>.</p>
                 </section>
 
                 <section class="will-section editable-section">
@@ -155,7 +350,8 @@
                     <h2>SIGNATURES</h2>
                     <div class="signature-block">
                         <div class="sig-row"><span>Testator:</span><span class="sig-line"></span></div>
-                        <div class="sig-row"><span>Date:</span><span class="sig-line">_____ / _____ / _______</span></div>
+                        <div class="sig-row"><span>Date:</span><span class="sig-line">_____ / _____ / _______</span>
+                        </div>
                     </div>
                     <div class="witnesses">
                         <div class="witness">
@@ -177,57 +373,152 @@
                     <div class="worksheet">
                         <h3>Section A: Debtors (People Who Owe the Estate)</h3>
                         <table>
-                            <thead><tr><th>#</th><th>Name</th><th>Reason</th><th>Amount (XAF)</th></tr></thead>
-                            <tbody id="will-debtors"><tr><td colspan="4"><em>No debtors</em></td></tr></tbody>
-                            <tfoot><tr><td colspan="3"><strong>Total to Collect:</strong></td><td id="will-debtors-total"><strong>0 XAF</strong></td></tr></tfoot>
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Name</th>
+                                    <th>Reason</th>
+                                    <th>Amount (XAF)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="will-debtors">
+                                <tr>
+                                    <td colspan="4"><em>No debtors</em></td>
+                                </tr>
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="3"><strong>Total to Collect:</strong></td>
+                                    <td id="will-debtors-total"><strong>0 XAF</strong></td>
+                                </tr>
+                            </tfoot>
                         </table>
                     </div>
 
                     <div class="worksheet">
-                        <h3>Section B: Creditors (Debts of the Estate) <span class="no-print" style="font-size: 0.8rem; color: var(--text-light);">— Click on creditor name to generate statement</span></h3>
+                        <h3>Section B: Creditors (Debts of the Estate) <span class="no-print"
+                                style="font-size: 0.8rem; color: var(--text-light);">— Click on creditor name to
+                                generate statement</span></h3>
                         <table>
-                            <thead><tr><th>#</th><th>Name</th><th>Reason</th><th>Amount (XAF)</th><th class="no-print">Statement</th></tr></thead>
-                            <tbody id="will-creditors"><tr><td colspan="5"><em>No creditors</em></td></tr></tbody>
-                            <tfoot><tr><td colspan="3"><strong>Total Liabilities:</strong></td><td id="will-creditors-total"><strong>0 XAF</strong></td><td class="no-print"></td></tr></tfoot>
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Name</th>
+                                    <th>Reason</th>
+                                    <th>Amount (XAF)</th>
+                                    <th class="no-print">Statement</th>
+                                </tr>
+                            </thead>
+                            <tbody id="will-creditors">
+                                <tr>
+                                    <td colspan="5"><em>No creditors</em></td>
+                                </tr>
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="3"><strong>Total Liabilities:</strong></td>
+                                    <td id="will-creditors-total"><strong>0 XAF</strong></td>
+                                    <td class="no-print"></td>
+                                </tr>
+                            </tfoot>
                         </table>
                     </div>
 
                     <div class="worksheet">
                         <h3>Section C: Assets to be Liquidated for Debt</h3>
                         <table>
-                            <thead><tr><th>#</th><th>Description</th><th>Location</th><th>Value (XAF)</th></tr></thead>
-                            <tbody id="will-assets"><tr><td colspan="4"><em>No assets for liquidation</em></td></tr></tbody>
-                            <tfoot><tr><td colspan="3"><strong>Total Liquidation Value:</strong></td><td id="will-assets-total"><strong>0 XAF</strong></td></tr></tfoot>
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Description</th>
+                                    <th>Location</th>
+                                    <th>Value (XAF)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="will-assets">
+                                <tr>
+                                    <td colspan="4"><em>No assets for liquidation</em></td>
+                                </tr>
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="3"><strong>Total Liquidation Value:</strong></td>
+                                    <td id="will-assets-total"><strong>0 XAF</strong></td>
+                                </tr>
+                            </tfoot>
                         </table>
                     </div>
 
                     <div class="worksheet">
                         <h3>Section D: Reserved Assets (Not to be Liquidated)</h3>
                         <table>
-                            <thead><tr><th>#</th><th>Description</th><th>Location</th><th>Value (XAF)</th></tr></thead>
-                            <tbody id="will-assets-reserved"><tr><td colspan="4"><em>No reserved assets</em></td></tr></tbody>
-                            <tfoot><tr><td colspan="3"><strong>Total Reserved Value:</strong></td><td id="will-assets-reserved-total"><strong>0 XAF</strong></td></tr></tfoot>
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Description</th>
+                                    <th>Location</th>
+                                    <th>Value (XAF)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="will-assets-reserved">
+                                <tr>
+                                    <td colspan="4"><em>No reserved assets</em></td>
+                                </tr>
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="3"><strong>Total Reserved Value:</strong></td>
+                                    <td id="will-assets-reserved-total"><strong>0 XAF</strong></td>
+                                </tr>
+                            </tfoot>
                         </table>
                     </div>
 
                     <div class="worksheet calculation">
                         <h3>Section E: Net Estate Calculation</h3>
                         <table class="calc-table">
-                            <tr><td>A. Total Estate Value</td><td id="will-calc-a">0 XAF</td></tr>
-                            <tr><td>B. Total from Debtors</td><td id="will-calc-b">+ 0 XAF</td></tr>
-                            <tr class="subtotal"><td>C. Available Pool (A + B)</td><td id="will-calc-c">0 XAF</td></tr>
-                            <tr><td>D. Total Liabilities</td><td id="will-calc-d">- 0 XAF</td></tr>
-                            <tr class="final"><td><strong>E. NET ESTATE FOR DISTRIBUTION</strong></td><td id="will-calc-e"><strong>0 XAF</strong></td></tr>
+                            <tr>
+                                <td>A. Total Estate Value</td>
+                                <td id="will-calc-a">0 XAF</td>
+                            </tr>
+                            <tr>
+                                <td>B. Total from Debtors</td>
+                                <td id="will-calc-b">+ 0 XAF</td>
+                            </tr>
+                            <tr class="subtotal">
+                                <td>C. Available Pool (A + B)</td>
+                                <td id="will-calc-c">0 XAF</td>
+                            </tr>
+                            <tr>
+                                <td>D. Total Liabilities</td>
+                                <td id="will-calc-d">- 0 XAF</td>
+                            </tr>
+                            <tr class="final">
+                                <td><strong>E. NET ESTATE FOR DISTRIBUTION</strong></td>
+                                <td id="will-calc-e"><strong>0 XAF</strong></td>
+                            </tr>
                         </table>
                     </div>
 
                     <div class="worksheet">
                         <h3>Islamic Inheritance Distribution</h3>
                         <table>
-                            <thead><tr><th>Heir</th><th>Relation</th><th>Share</th><th>Amount (XAF)</th></tr></thead>
-                            <tbody id="will-inheritance"><tr><td colspan="4"><em>Calculated based on net estate</em></td></tr></tbody>
+                            <thead>
+                                <tr>
+                                    <th>Heir</th>
+                                    <th>Relation</th>
+                                    <th>Share</th>
+                                    <th>Amount (XAF)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="will-inheritance">
+                                <tr>
+                                    <td colspan="4"><em>Calculated based on net estate</em></td>
+                                </tr>
+                            </tbody>
                         </table>
-                        <p class="worksheet-note"><em>Final distribution must be verified by a qualified Islamic scholar.</em></p>
+                        <p class="worksheet-note"><em>Final distribution must be verified by a qualified Islamic
+                                scholar.</em></p>
                     </div>
                 </section>
 
@@ -309,10 +600,10 @@
 
         function numberToWords(num) {
             if (num === 0) return 'zero';
-            
+
             const ones = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine',
-                         'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen',
-                         'seventeen', 'eighteen', 'nineteen'];
+                'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen',
+                'seventeen', 'eighteen', 'nineteen'];
             const tens = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
             const scales = ['', 'thousand', 'million', 'billion'];
 
@@ -354,7 +645,7 @@
             const data = await res.json();
             const el = document.getElementById('will-executors');
             if (data.length > 0) {
-                el.innerHTML = data.map((e, i) => `<li><strong>Executor ${i+1}:</strong> ${e.full_name}${e.contact ? ' - ' + e.contact : ''}</li>`).join('');
+                el.innerHTML = data.map((e, i) => `<li><strong>Executor ${i + 1}:</strong> ${e.full_name}${e.contact ? ' - ' + e.contact : ''}</li>`).join('');
             }
         }
 
@@ -372,7 +663,7 @@
             const data = await res.json();
             const el = document.getElementById('will-debtors');
             if (data.length > 0) {
-                el.innerHTML = data.map((d, i) => `<tr><td>${i+1}</td><td>${d.full_name}</td><td>${d.reason || '-'}</td><td>${formatCurrencyFull(d.amount)}</td></tr>`).join('');
+                el.innerHTML = data.map((d, i) => `<tr><td>${i + 1}</td><td>${d.full_name}</td><td>${d.reason || '-'}</td><td>${formatCurrencyFull(d.amount)}</td></tr>`).join('');
             }
         }
 
@@ -384,7 +675,7 @@
             if (data.length > 0) {
                 el.innerHTML = data.map((c, i) => `
                     <tr>
-                        <td>${i+1}</td>
+                        <td>${i + 1}</td>
                         <td>${c.full_name}</td>
                         <td>${c.reason || '-'}</td>
                         <td>${formatCurrencyFull(c.amount)}</td>
@@ -399,7 +690,7 @@
         async function loadAssets() {
             const res = await fetch('/api/assets');
             const data = await res.json();
-            
+
             // Filter assets
             const liquidated = data.filter(a => a.is_liquidated !== false);
             const reserved = data.filter(a => a.is_liquidated === false);
@@ -407,7 +698,7 @@
             // Render Liquidated
             const elLiq = document.getElementById('will-assets');
             if (liquidated.length > 0) {
-                elLiq.innerHTML = liquidated.map((a, i) => `<tr><td>${i+1}</td><td>${a.description}</td><td>${a.location || '-'}</td><td>${formatCurrencyFull(a.estimated_value)}</td></tr>`).join('');
+                elLiq.innerHTML = liquidated.map((a, i) => `<tr><td>${i + 1}</td><td>${a.description}</td><td>${a.location || '-'}</td><td>${formatCurrencyFull(a.estimated_value)}</td></tr>`).join('');
             } else {
                 elLiq.innerHTML = '<tr><td colspan="4"><em>No assets for liquidation</em></td></tr>';
             }
@@ -418,7 +709,7 @@
             // Render Reserved
             const elRes = document.getElementById('will-assets-reserved');
             if (reserved.length > 0) {
-                elRes.innerHTML = reserved.map((a, i) => `<tr><td>${i+1}</td><td>${a.description}</td><td>${a.location || '-'}</td><td>${formatCurrencyFull(a.estimated_value)}</td></tr>`).join('');
+                elRes.innerHTML = reserved.map((a, i) => `<tr><td>${i + 1}</td><td>${a.description}</td><td>${a.location || '-'}</td><td>${formatCurrencyFull(a.estimated_value)}</td></tr>`).join('');
             } else {
                 elRes.innerHTML = '<tr><td colspan="4"><em>No reserved assets</em></td></tr>';
             }
@@ -442,10 +733,10 @@
         function toggleEdit(section) {
             const contentEl = document.getElementById(section + '-content') || document.getElementById(section + '-extra');
             if (!contentEl) return;
-            
+
             const isEditing = contentEl.contentEditable === 'true';
             contentEl.contentEditable = !isEditing;
-            
+
             if (isEditing) {
                 contentEl.style.outline = '';
                 contentEl.style.background = '';
@@ -483,7 +774,7 @@
                 if (res.ok) {
                     const data = await res.json();
                     willEdits = data.edits || {};
-                    
+
                     // Apply saved edits
                     Object.keys(willEdits).forEach(section => {
                         const contentEl = document.getElementById(section + '-content') || document.getElementById(section + '-extra');
@@ -507,9 +798,9 @@
             });
 
             const amountFormatted = formatAmountWithWords(creditor.amount);
-            const title = creditor.full_name.toUpperCase().startsWith('MR') || 
-                          creditor.full_name.toUpperCase().startsWith('MRS') || 
-                          creditor.full_name.toUpperCase().startsWith('MS') ? '' : 'Mr./Mrs. ';
+            const title = creditor.full_name.toUpperCase().startsWith('MR') ||
+                creditor.full_name.toUpperCase().startsWith('MRS') ||
+                creditor.full_name.toUpperCase().startsWith('MS') ? '' : 'Mr./Mrs. ';
 
             const statementHTML = `
                 <div class="print-statement" id="printable-statement">
@@ -646,4 +937,5 @@
         });
     </script>
 </body>
+
 </html>

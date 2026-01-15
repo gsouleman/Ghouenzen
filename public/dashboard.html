@@ -1,64 +1,276 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard | Al-Wasiyyah</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Outfit:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="/css/style.css">
     <style>
         /* Form row for side-by-side fields */
-        .form-row { display: flex; gap: 1rem; }
-        .form-row .form-group { flex: 1; }
-        
+        .form-row {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+        }
+
         /* Line Items Section */
-        .line-items-section { margin: 1.5rem 0; padding: 1rem; background: #f9f7f3; border-radius: 8px; border: 1px solid #e5e0d5; }
-        .line-items-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
-        .line-items-header h4 { margin: 0; color: #0d4d3a; }
-        .line-item { padding: 1rem; background: white; border-radius: 6px; margin-bottom: 0.75rem; border: 1px solid #e5e0d5; }
-        .line-item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; font-weight: 500; color: #1a6b52; }
-        .btn-remove-item { background: #dc3545; color: white; border: none; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; font-size: 14px; line-height: 1; }
-        .btn-remove-item:hover { background: #c82333; }
-        .line-items-total { margin-top: 1rem; padding-top: 0.75rem; border-top: 2px solid #1a6b52; text-align: right; font-size: 1.1rem; color: #0d4d3a; }
-        
+        .line-items-section {
+            margin: 1.5rem 0;
+            padding: 1rem;
+            background: #f9f7f3;
+            border-radius: 8px;
+            border: 1px solid #e5e0d5;
+        }
+
+        .line-items-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .line-items-header h4 {
+            margin: 0;
+            color: #0d4d3a;
+        }
+
+        .line-item {
+            padding: 1rem;
+            background: white;
+            border-radius: 6px;
+            margin-bottom: 0.75rem;
+            border: 1px solid #e5e0d5;
+        }
+
+        .line-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #1a6b52;
+        }
+
+        .btn-remove-item {
+            background: #dc3545;
+            color: white;
+            border: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 14px;
+            line-height: 1;
+        }
+
+        .btn-remove-item:hover {
+            background: #c82333;
+        }
+
+        .line-items-total {
+            margin-top: 1rem;
+            padding-top: 0.75rem;
+            border-top: 2px solid #1a6b52;
+            text-align: right;
+            font-size: 1.1rem;
+            color: #0d4d3a;
+        }
+
         /* Creditor/Debtor Statement Styles */
-        .stmt-btn { padding: 0.25rem 0.5rem; font-size: 0.75rem; border: none; border-radius: 4px; cursor: pointer; margin-right: 4px; }
-        .stmt-btn.view { background: #2d8f6f; color: white; }
-        .stmt-btn.print { background: #c9a227; color: #1a1a1a; }
-        .stmt-btn:hover { opacity: 0.85; }
-        
-        .statement-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 3000; padding: 1rem; }
-        .statement-overlay.active { display: flex; }
-        .statement-container { background: white; max-width: 800px; width: 100%; max-height: 90vh; overflow-y: auto; border-radius: 12px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); }
-        .statement-header { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.5rem; border-bottom: 1px solid #e5e0d5; background: #f5f0e6; border-radius: 12px 12px 0 0; }
-        .statement-header h3 { margin: 0; color: #0d4d3a; }
-        .statement-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #7a7a7a; }
-        .statement-body { padding: 2rem; }
-        .statement-actions { padding: 1rem 1.5rem; border-top: 1px solid #e5e0d5; display: flex; gap: 1rem; justify-content: flex-end; }
-        
-        .print-statement { font-family: 'Outfit', sans-serif; line-height: 1.8; }
-        .print-statement .letterhead { text-align: center; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 2px solid #1a6b52; }
-        .print-statement .letterhead h2 { color: #0d4d3a; margin-bottom: 0.25rem; }
-        .print-statement .date-line { text-align: right; margin-bottom: 2rem; }
-        .print-statement .recipient { margin-bottom: 2rem; }
-        .print-statement .subject { font-weight: 600; margin-bottom: 1.5rem; text-decoration: underline; }
-        .print-statement .body-text { margin-bottom: 1.5rem; text-align: justify; }
-        .print-statement .amount-box { background: #f5f0e6; padding: 1rem; border-radius: 8px; margin: 1.5rem 0; border-left: 4px solid #c9a227; }
-        .print-statement .amount-numeric { font-size: 1.25rem; font-weight: 700; color: #0d4d3a; }
-        .print-statement .amount-words { font-style: italic; color: #4a4a4a; margin-top: 0.5rem; }
-        .print-statement .confirmation-box { background: #fff9e6; padding: 1.5rem; border: 2px dashed #c9a227; border-radius: 8px; margin: 2rem 0; }
-        .print-statement .confirmation-box h4 { margin-bottom: 1rem; color: #0d4d3a; }
-        .print-statement .confirm-line { display: flex; gap: 1rem; margin-bottom: 0.75rem; align-items: flex-start; }
-        .print-statement .confirm-checkbox { width: 18px; height: 18px; border: 2px solid #1a1a1a; display: inline-block; flex-shrink: 0; margin-top: 4px; }
-        .print-statement .signature-area { margin-top: 3rem; }
-        .print-statement .sig-line { border-bottom: 1px solid #1a1a1a; min-width: 200px; display: inline-block; margin-left: 1rem; }
+        .stmt-btn {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 4px;
+        }
+
+        .stmt-btn.view {
+            background: #2d8f6f;
+            color: white;
+        }
+
+        .stmt-btn.print {
+            background: #c9a227;
+            color: #1a1a1a;
+        }
+
+        .stmt-btn:hover {
+            opacity: 0.85;
+        }
+
+        .statement-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+            padding: 1rem;
+        }
+
+        .statement-overlay.active {
+            display: flex;
+        }
+
+        .statement-container {
+            background: white;
+            max-width: 800px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            border-radius: 12px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+        }
+
+        .statement-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #e5e0d5;
+            background: #f5f0e6;
+            border-radius: 12px 12px 0 0;
+        }
+
+        .statement-header h3 {
+            margin: 0;
+            color: #0d4d3a;
+        }
+
+        .statement-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #7a7a7a;
+        }
+
+        .statement-body {
+            padding: 2rem;
+        }
+
+        .statement-actions {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid #e5e0d5;
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+        }
+
+        .print-statement {
+            font-family: 'Outfit', sans-serif;
+            line-height: 1.8;
+        }
+
+        .print-statement .letterhead {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #1a6b52;
+        }
+
+        .print-statement .letterhead h2 {
+            color: #0d4d3a;
+            margin-bottom: 0.25rem;
+        }
+
+        .print-statement .date-line {
+            text-align: right;
+            margin-bottom: 2rem;
+        }
+
+        .print-statement .recipient {
+            margin-bottom: 2rem;
+        }
+
+        .print-statement .subject {
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            text-decoration: underline;
+        }
+
+        .print-statement .body-text {
+            margin-bottom: 1.5rem;
+            text-align: justify;
+        }
+
+        .print-statement .amount-box {
+            background: #f5f0e6;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+            border-left: 4px solid #c9a227;
+        }
+
+        .print-statement .amount-numeric {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #0d4d3a;
+        }
+
+        .print-statement .amount-words {
+            font-style: italic;
+            color: #4a4a4a;
+            margin-top: 0.5rem;
+        }
+
+        .print-statement .confirmation-box {
+            background: #fff9e6;
+            padding: 1.5rem;
+            border: 2px dashed #c9a227;
+            border-radius: 8px;
+            margin: 2rem 0;
+        }
+
+        .print-statement .confirmation-box h4 {
+            margin-bottom: 1rem;
+            color: #0d4d3a;
+        }
+
+        .print-statement .confirm-line {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 0.75rem;
+            align-items: flex-start;
+        }
+
+        .print-statement .confirm-checkbox {
+            width: 18px;
+            height: 18px;
+            border: 2px solid #1a1a1a;
+            display: inline-block;
+            flex-shrink: 0;
+            margin-top: 4px;
+        }
+
+        .print-statement .signature-area {
+            margin-top: 3rem;
+        }
+
+        .print-statement .sig-line {
+            border-bottom: 1px solid #1a1a1a;
+            min-width: 200px;
+            display: inline-block;
+            margin-left: 1rem;
+        }
     </style>
 </head>
+
 <body class="dashboard-page">
-    <div class="pattern-overlay"></div>
-    
+
+
     <nav class="navbar">
         <div class="nav-container">
             <a href="/" class="logo">
@@ -81,7 +293,7 @@
                     <p id="testator-display">No testator registered</p>
                 </div>
                 <div class="header-actions">
-                   <!-- <button class="btn btn-outline" onclick="resetData()">New Session</button> -->
+                    <!-- <button class="btn btn-outline" onclick="resetData()">New Session</button> -->
                     <a href="/will" class="btn btn-primary">View Will Document</a>
                 </div>
             </header>
@@ -141,7 +353,8 @@
                             </div>
                             <div class="form-group">
                                 <label for="testator-address">Address</label>
-                                <textarea id="testator-address" rows="3" placeholder="Enter your residential address"></textarea>
+                                <textarea id="testator-address" rows="3"
+                                    placeholder="Enter your residential address"></textarea>
                             </div>
                             <button type="submit" class="btn btn-primary">Save Information</button>
                         </form>
@@ -156,10 +369,17 @@
                         <div class="table-wrapper">
                             <table class="data-table">
                                 <thead>
-                                    <tr><th>Relation</th><th>Full Name</th><th>Share Type</th><th>Actions</th></tr>
+                                    <tr>
+                                        <th>Relation</th>
+                                        <th>Full Name</th>
+                                        <th>Share Type</th>
+                                        <th>Actions</th>
+                                    </tr>
                                 </thead>
                                 <tbody id="heirs-tbody">
-                                    <tr class="empty-row"><td colspan="4">No heirs registered</td></tr>
+                                    <tr class="empty-row">
+                                        <td colspan="4">No heirs registered</td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -169,15 +389,22 @@
                     <div class="panel" id="panel-executors">
                         <div class="panel-header">
                             <h2>Executors</h2>
-                            <button class="btn btn-primary btn-sm" onclick="showModal('executor')">+ Add Executor</button>
+                            <button class="btn btn-primary btn-sm" onclick="showModal('executor')">+ Add
+                                Executor</button>
                         </div>
                         <div class="table-wrapper">
                             <table class="data-table">
                                 <thead>
-                                    <tr><th>Full Name</th><th>Contact</th><th>Actions</th></tr>
+                                    <tr>
+                                        <th>Full Name</th>
+                                        <th>Contact</th>
+                                        <th>Actions</th>
+                                    </tr>
                                 </thead>
                                 <tbody id="executors-tbody">
-                                    <tr class="empty-row"><td colspan="3">No executors registered</td></tr>
+                                    <tr class="empty-row">
+                                        <td colspan="3">No executors registered</td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -192,13 +419,26 @@
                         <div class="table-wrapper">
                             <table class="data-table">
                                 <thead>
-                                    <tr><th>Name</th><th>Reason</th><th>Amount (XAF)</th><th>Statement</th><th>Actions</th></tr>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Reason</th>
+                                        <th>Amount (XAF)</th>
+                                        <th>Statement</th>
+                                        <th>Actions</th>
+                                    </tr>
                                 </thead>
                                 <tbody id="debtors-tbody">
-                                    <tr class="empty-row"><td colspan="5">No debtors registered</td></tr>
+                                    <tr class="empty-row">
+                                        <td colspan="5">No debtors registered</td>
+                                    </tr>
                                 </tbody>
                                 <tfoot>
-                                    <tr><td colspan="2"><strong>Total to Collect:</strong></td><td id="debtors-total" class="total-positive">0 XAF</td><td></td><td></td></tr>
+                                    <tr>
+                                        <td colspan="2"><strong>Total to Collect:</strong></td>
+                                        <td id="debtors-total" class="total-positive">0 XAF</td>
+                                        <td></td>
+                                        <td></td>
+                                    </tr>
                                 </tfoot>
                             </table>
                         </div>
@@ -208,18 +448,32 @@
                     <div class="panel" id="panel-creditors">
                         <div class="panel-header">
                             <h2>Creditors (People/Institutions You Owe)</h2>
-                            <button class="btn btn-primary btn-sm" onclick="showModal('creditor')">+ Add Creditor</button>
+                            <button class="btn btn-primary btn-sm" onclick="showModal('creditor')">+ Add
+                                Creditor</button>
                         </div>
                         <div class="table-wrapper">
                             <table class="data-table">
                                 <thead>
-                                    <tr><th>Name</th><th>Reason</th><th>Amount (XAF)</th><th>Statement</th><th>Actions</th></tr>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Reason</th>
+                                        <th>Amount (XAF)</th>
+                                        <th>Statement</th>
+                                        <th>Actions</th>
+                                    </tr>
                                 </thead>
                                 <tbody id="creditors-tbody">
-                                    <tr class="empty-row"><td colspan="5">No creditors registered</td></tr>
+                                    <tr class="empty-row">
+                                        <td colspan="5">No creditors registered</td>
+                                    </tr>
                                 </tbody>
                                 <tfoot>
-                                    <tr><td colspan="2"><strong>Total Liabilities:</strong></td><td id="creditors-total" class="total-negative">0 XAF</td><td></td><td></td></tr>
+                                    <tr>
+                                        <td colspan="2"><strong>Total Liabilities:</strong></td>
+                                        <td id="creditors-total" class="total-negative">0 XAF</td>
+                                        <td></td>
+                                        <td></td>
+                                    </tr>
                                 </tfoot>
                             </table>
                         </div>
@@ -231,14 +485,31 @@
                             <h2>Assets Inventory</h2>
                             <button class="btn btn-primary btn-sm" onclick="showModal('asset')">+ Add Asset</button>
                         </div>
-                        
+
                         <div class="asset-section">
                             <h3>🏠 Immovable Property (Land & Buildings)</h3>
                             <div class="table-wrapper">
                                 <table class="data-table">
-                                    <thead><tr><th>Description</th><th>Location</th><th>Value (XAF)</th><th>Actions</th></tr></thead>
-                                    <tbody id="immovable-tbody"><tr class="empty-row"><td colspan="4">No immovable assets</td></tr></tbody>
-                                    <tfoot><tr><td colspan="2"><strong>Subtotal:</strong></td><td id="immovable-total">0 XAF</td><td></td></tr></tfoot>
+                                    <thead>
+                                        <tr>
+                                            <th>Description</th>
+                                            <th>Location</th>
+                                            <th>Value (XAF)</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="immovable-tbody">
+                                        <tr class="empty-row">
+                                            <td colspan="4">No immovable assets</td>
+                                        </tr>
+                                    </tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <td colspan="2"><strong>Subtotal:</strong></td>
+                                            <td id="immovable-total">0 XAF</td>
+                                            <td></td>
+                                        </tr>
+                                    </tfoot>
                                 </table>
                             </div>
                         </div>
@@ -247,9 +518,26 @@
                             <h3>🚗 Movable Property (Vehicles & Equipment)</h3>
                             <div class="table-wrapper">
                                 <table class="data-table">
-                                    <thead><tr><th>Description</th><th>Location</th><th>Value (XAF)</th><th>Actions</th></tr></thead>
-                                    <tbody id="movable-tbody"><tr class="empty-row"><td colspan="4">No movable assets</td></tr></tbody>
-                                    <tfoot><tr><td colspan="2"><strong>Subtotal:</strong></td><td id="movable-total">0 XAF</td><td></td></tr></tfoot>
+                                    <thead>
+                                        <tr>
+                                            <th>Description</th>
+                                            <th>Location</th>
+                                            <th>Value (XAF)</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="movable-tbody">
+                                        <tr class="empty-row">
+                                            <td colspan="4">No movable assets</td>
+                                        </tr>
+                                    </tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <td colspan="2"><strong>Subtotal:</strong></td>
+                                            <td id="movable-total">0 XAF</td>
+                                            <td></td>
+                                        </tr>
+                                    </tfoot>
                                 </table>
                             </div>
                         </div>
@@ -258,9 +546,26 @@
                             <h3>💰 Other Assets (Bank Accounts, Investments)</h3>
                             <div class="table-wrapper">
                                 <table class="data-table">
-                                    <thead><tr><th>Description</th><th>Location</th><th>Value (XAF)</th><th>Actions</th></tr></thead>
-                                    <tbody id="other-tbody"><tr class="empty-row"><td colspan="4">No other assets</td></tr></tbody>
-                                    <tfoot><tr><td colspan="2"><strong>Subtotal:</strong></td><td id="other-total">0 XAF</td><td></td></tr></tfoot>
+                                    <thead>
+                                        <tr>
+                                            <th>Description</th>
+                                            <th>Location</th>
+                                            <th>Value (XAF)</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="other-tbody">
+                                        <tr class="empty-row">
+                                            <td colspan="4">No other assets</td>
+                                        </tr>
+                                    </tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <td colspan="2"><strong>Subtotal:</strong></td>
+                                            <td id="other-total">0 XAF</td>
+                                            <td></td>
+                                        </tr>
+                                    </tfoot>
                                 </table>
                             </div>
                         </div>
@@ -276,21 +581,35 @@
                         <div class="panel-header">
                             <h2>Islamic Inheritance Distribution (Al-Faraid)</h2>
                         </div>
-                        
+
                         <div class="inheritance-calc">
-                            <div class="calc-row"><span>A. Total Estate Value</span><span id="calc-assets">0 XAF</span></div>
-                            <div class="calc-row"><span>B. Recoverable from Debtors</span><span id="calc-debtors" class="positive">+ 0 XAF</span></div>
-                            <div class="calc-row subtotal"><span>C. Total Available Pool (A + B)</span><span id="calc-pool">0 XAF</span></div>
-                            <div class="calc-row"><span>D. Liabilities to Pay</span><span id="calc-liabilities" class="negative">- 0 XAF</span></div>
-                            <div class="calc-row final"><span>E. Net Estate for Distribution</span><span id="calc-net">0 XAF</span></div>
+                            <div class="calc-row"><span>A. Total Estate Value</span><span id="calc-assets">0 XAF</span>
+                            </div>
+                            <div class="calc-row"><span>B. Recoverable from Debtors</span><span id="calc-debtors"
+                                    class="positive">+ 0 XAF</span></div>
+                            <div class="calc-row subtotal"><span>C. Total Available Pool (A + B)</span><span
+                                    id="calc-pool">0 XAF</span></div>
+                            <div class="calc-row"><span>D. Liabilities to Pay</span><span id="calc-liabilities"
+                                    class="negative">- 0 XAF</span></div>
+                            <div class="calc-row final"><span>E. Net Estate for Distribution</span><span id="calc-net">0
+                                    XAF</span></div>
                         </div>
 
                         <h3 style="margin: 2rem 0 1rem;">Heir Shares</h3>
                         <div class="table-wrapper">
                             <table class="data-table inheritance-table">
-                                <thead><tr><th>Heir</th><th>Relation</th><th>Share</th><th>Amount (XAF)</th></tr></thead>
+                                <thead>
+                                    <tr>
+                                        <th>Heir</th>
+                                        <th>Relation</th>
+                                        <th>Share</th>
+                                        <th>Amount (XAF)</th>
+                                    </tr>
+                                </thead>
                                 <tbody id="inheritance-tbody">
-                                    <tr class="empty-row"><td colspan="4">Add heirs and assets to see distribution</td></tr>
+                                    <tr class="empty-row">
+                                        <td colspan="4">Add heirs and assets to see distribution</td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -341,4 +660,5 @@
     <script src="/js/app.js"></script>
     <script src="/js/dashboard.js"></script>
 </body>
+
 </html>
