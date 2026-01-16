@@ -10,8 +10,8 @@ const PORT = process.env.PORT || 3000;
 // PostgreSQL Connection with better error handling
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
-    ssl: process.env.DATABASE_URL && process.env.DATABASE_URL.includes('render.com') 
-        ? { rejectUnauthorized: false } 
+    ssl: process.env.DATABASE_URL && process.env.DATABASE_URL.includes('render.com')
+        ? { rejectUnauthorized: false }
         : false,
     max: 10,
     idleTimeoutMillis: 30000,
@@ -34,7 +34,7 @@ async function initDB() {
     try {
         client = await pool.connect();
         console.log('Connected to PostgreSQL database');
-        
+
         // Create tables one by one to avoid syntax issues
         await client.query(`
             CREATE TABLE IF NOT EXISTS testator (
@@ -358,7 +358,7 @@ app.get('/api/debtors', async (req, res) => {
         const testator = await getCurrentTestator();
         if (!testator) return res.json([]);
         const debtorsResult = await pool.query('SELECT * FROM debtors WHERE testator_id = $1 ORDER BY id', [testator.id]);
-        
+
         // Get items for each debtor
         const debtors = await Promise.all(debtorsResult.rows.map(async (debtor) => {
             const itemsResult = await pool.query('SELECT * FROM debtor_items WHERE debtor_id = $1 ORDER BY id', [debtor.id]);
@@ -373,7 +373,7 @@ app.get('/api/debtors', async (req, res) => {
                 amount: totalAmount
             };
         }));
-        
+
         res.json(debtors);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -385,14 +385,14 @@ app.post('/api/debtors', async (req, res) => {
         const testator = await getCurrentTestator();
         if (!testator) return res.status(400).json({ error: 'No testator' });
         const { full_name, contact, gender, language, items } = req.body;
-        
+
         // Insert debtor
         const result = await pool.query(
             'INSERT INTO debtors (testator_id, full_name, contact, gender, language) VALUES ($1, $2, $3, $4, $5) RETURNING id',
             [testator.id, full_name, contact || '', gender || 'male', language || 'english']
         );
         const debtorId = result.rows[0].id;
-        
+
         // Insert items
         if (items && items.length > 0) {
             for (const item of items) {
@@ -402,7 +402,7 @@ app.post('/api/debtors', async (req, res) => {
                 );
             }
         }
-        
+
         res.json({ id: debtorId, message: 'Debtor added' });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -412,16 +412,16 @@ app.post('/api/debtors', async (req, res) => {
 app.put('/api/debtors/:id', async (req, res) => {
     try {
         const { full_name, contact, gender, language, items } = req.body;
-        
+
         // Update debtor
         await pool.query(
             'UPDATE debtors SET full_name = $1, contact = $2, gender = $3, language = $4 WHERE id = $5',
             [full_name, contact || '', gender || 'male', language || 'english', req.params.id]
         );
-        
+
         // Delete existing items and re-insert
         await pool.query('DELETE FROM debtor_items WHERE debtor_id = $1', [req.params.id]);
-        
+
         if (items && items.length > 0) {
             for (const item of items) {
                 await pool.query(
@@ -430,7 +430,7 @@ app.put('/api/debtors/:id', async (req, res) => {
                 );
             }
         }
-        
+
         res.json({ message: 'Debtor updated' });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -453,7 +453,7 @@ app.get('/api/creditors', async (req, res) => {
         const testator = await getCurrentTestator();
         if (!testator) return res.json([]);
         const creditorsResult = await pool.query('SELECT * FROM creditors WHERE testator_id = $1 ORDER BY id', [testator.id]);
-        
+
         // Get items for each creditor
         const creditors = await Promise.all(creditorsResult.rows.map(async (creditor) => {
             const itemsResult = await pool.query('SELECT * FROM creditor_items WHERE creditor_id = $1 ORDER BY id', [creditor.id]);
@@ -468,7 +468,7 @@ app.get('/api/creditors', async (req, res) => {
                 amount: totalAmount
             };
         }));
-        
+
         res.json(creditors);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -480,14 +480,14 @@ app.post('/api/creditors', async (req, res) => {
         const testator = await getCurrentTestator();
         if (!testator) return res.status(400).json({ error: 'No testator' });
         const { full_name, contact, gender, language, items } = req.body;
-        
+
         // Insert creditor
         const result = await pool.query(
             'INSERT INTO creditors (testator_id, full_name, contact, gender, language) VALUES ($1, $2, $3, $4, $5) RETURNING id',
             [testator.id, full_name, contact || '', gender || 'male', language || 'english']
         );
         const creditorId = result.rows[0].id;
-        
+
         // Insert items
         if (items && items.length > 0) {
             for (const item of items) {
@@ -497,7 +497,7 @@ app.post('/api/creditors', async (req, res) => {
                 );
             }
         }
-        
+
         res.json({ id: creditorId, message: 'Creditor added' });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -507,16 +507,16 @@ app.post('/api/creditors', async (req, res) => {
 app.put('/api/creditors/:id', async (req, res) => {
     try {
         const { full_name, contact, gender, language, items } = req.body;
-        
+
         // Update creditor
         await pool.query(
             'UPDATE creditors SET full_name = $1, contact = $2, gender = $3, language = $4 WHERE id = $5',
             [full_name, contact || '', gender || 'male', language || 'english', req.params.id]
         );
-        
+
         // Delete existing items and re-insert
         await pool.query('DELETE FROM creditor_items WHERE creditor_id = $1', [req.params.id]);
-        
+
         if (items && items.length > 0) {
             for (const item of items) {
                 await pool.query(
@@ -525,7 +525,7 @@ app.put('/api/creditors/:id', async (req, res) => {
                 );
             }
         }
-        
+
         res.json({ message: 'Creditor updated' });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -597,12 +597,14 @@ app.get('/api/summary', async (req, res) => {
         const testator = await getCurrentTestator();
         if (!testator) return res.status(404).json({ error: 'No testator found' });
 
-        const [heirsRes, debtorsRes, creditorsRes, assetsRes, executorsRes] = await Promise.all([
+        const [heirsRes, debtorsRes, creditorsRes, assetsRes, executorsRes, debtorItemsRes, creditorItemsRes] = await Promise.all([
             pool.query('SELECT * FROM heirs WHERE testator_id = $1', [testator.id]),
             pool.query('SELECT * FROM debtors WHERE testator_id = $1', [testator.id]),
             pool.query('SELECT * FROM creditors WHERE testator_id = $1', [testator.id]),
             pool.query('SELECT * FROM assets WHERE testator_id = $1', [testator.id]),
-            pool.query('SELECT * FROM executors WHERE testator_id = $1', [testator.id])
+            pool.query('SELECT * FROM executors WHERE testator_id = $1', [testator.id]),
+            pool.query('SELECT SUM(amount) as total FROM debtor_items WHERE debtor_id IN (SELECT id FROM debtors WHERE testator_id = $1)', [testator.id]),
+            pool.query('SELECT SUM(amount) as total FROM creditor_items WHERE creditor_id IN (SELECT id FROM creditors WHERE testator_id = $1)', [testator.id])
         ]);
 
         const heirs = heirsRes.rows;
@@ -611,8 +613,8 @@ app.get('/api/summary', async (req, res) => {
         const assets = assetsRes.rows;
         const executors = executorsRes.rows;
 
-        const totalDebtors = debtors.reduce((sum, d) => sum + parseFloat(d.amount || 0), 0);
-        const totalCreditors = creditors.reduce((sum, c) => sum + parseFloat(c.amount || 0), 0);
+        const totalDebtors = parseFloat(debtorItemsRes.rows[0].total || 0);
+        const totalCreditors = parseFloat(creditorItemsRes.rows[0].total || 0);
         const totalAssets = assets.reduce((sum, a) => sum + parseFloat(a.estimated_value || 0), 0);
         const immovableAssets = assets.filter(a => a.category === 'immovable').reduce((sum, a) => sum + parseFloat(a.estimated_value || 0), 0);
         const movableAssets = assets.filter(a => a.category === 'movable').reduce((sum, a) => sum + parseFloat(a.estimated_value || 0), 0);
@@ -666,7 +668,7 @@ function calculateIslamicInheritance(netEstate, heirs) {
 
     // Wife's share: 1/8 when there are children, 1/4 otherwise
     if (wifeCount > 0) {
-        const wifeFraction = hasChildren ? 1/8 : 1/4;
+        const wifeFraction = hasChildren ? 1 / 8 : 1 / 4;
         const wifeShare = netEstate * wifeFraction;
         heirs.filter(h => h.relation === 'wife').forEach(h => {
             shares.push({
@@ -681,7 +683,7 @@ function calculateIslamicInheritance(netEstate, heirs) {
 
     // Mother's share: 1/6 when there are children, 1/3 otherwise
     if (motherCount > 0) {
-        const motherFraction = hasChildren ? 1/6 : 1/3;
+        const motherFraction = hasChildren ? 1 / 6 : 1 / 3;
         const motherShare = netEstate * motherFraction;
         heirs.filter(h => h.relation === 'mother').forEach(h => {
             shares.push({
@@ -696,7 +698,7 @@ function calculateIslamicInheritance(netEstate, heirs) {
 
     // Father's share: 1/6 when there are children
     if (fatherCount > 0 && hasChildren) {
-        const fatherShare = netEstate * (1/6);
+        const fatherShare = netEstate * (1 / 6);
         heirs.filter(h => h.relation === 'father').forEach(h => {
             shares.push({
                 name: h.full_name,
@@ -825,12 +827,12 @@ app.post('/api/will-edits', async (req, res) => {
     try {
         const testator = await getCurrentTestator();
         if (!testator) return res.status(400).json({ error: 'No testator' });
-        
+
         const { edits } = req.body;
-        
+
         // Clear existing edits for this testator
         await pool.query('DELETE FROM will_edits WHERE testator_id = $1', [testator.id]);
-        
+
         // Insert new edits
         for (const [section, content] of Object.entries(edits)) {
             if (content && content.trim()) {
@@ -840,7 +842,7 @@ app.post('/api/will-edits', async (req, res) => {
                 );
             }
         }
-        
+
         res.json({ message: 'Will edits saved' });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -852,17 +854,17 @@ app.get('/api/will-edits', async (req, res) => {
     try {
         const testator = await getCurrentTestator();
         if (!testator) return res.json({ edits: {} });
-        
+
         const result = await pool.query(
             'SELECT section_name, content FROM will_edits WHERE testator_id = $1',
             [testator.id]
         );
-        
+
         const edits = {};
         result.rows.forEach(row => {
             edits[row.section_name] = row.content;
         });
-        
+
         res.json({ edits });
     } catch (err) {
         res.status(500).json({ error: err.message });
