@@ -1211,3 +1211,65 @@ function closeStatement() {
 document.getElementById('statement-overlay')?.addEventListener('click', (e) => {
     if (e.target.id === 'statement-overlay') closeStatement();
 });
+
+function printList(type) {
+    const isDebtor = type === 'debtor';
+    const data = isDebtor ? debtorsData : creditorsData;
+    const title = isDebtor ? 'Debtors List (People Who Owe You)' : 'Creditors List (People You Owe)';
+    const totalLabel = isDebtor ? 'Total to Collect' : 'Total Liabilities';
+    const totalAmount = data.reduce((sum, item) => sum + (item.amount || 0), 0);
+    const today = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+
+    const rows = data.map((item, index) => `
+        <tr>
+            <td>${index + 1}</td>
+            <td>${item.full_name}</td>
+            <td>${item.reason || '-'}</td>
+            <td>${item.contact || '-'}</td>
+            <td style="text-align: right;">${formatCurrency(item.amount)}</td>
+        </tr>
+    `).join('');
+
+    const listHTML = `
+        <div class="letterhead">
+            <h2>Al-Wasiyyah Estate Management</h2>
+            <p><strong>Testator:</strong> ${testatorData.full_name || '[Name]'}</p>
+        </div>
+        <div class="date-line">Date: ${today}</div>
+        <h3 class="subject" style="text-align: center;">${title}</h3>
+        
+        <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
+            <thead>
+                <tr style="background: #f5f0e6;">
+                    <th style="border: 1px solid #ddd; padding: 8px; text-align: left; width: 50px;">#</th>
+                    <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Name</th>
+                    <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Reason</th>
+                    <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Contact</th>
+                    <th style="border: 1px solid #ddd; padding: 8px; text-align: right;">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${rows.length > 0 ? rows : '<tr><td colspan="5" style="text-align:center; padding: 1rem;">No records found</td></tr>'}
+            </tbody>
+            <tfoot>
+                <tr style="background: #f5f0e6; font-weight: bold;">
+                    <td colspan="4" style="border: 1px solid #ddd; padding: 8px; text-align: right;">${totalLabel}:</td>
+                    <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${formatCurrency(totalAmount)}</td>
+                </tr>
+            </tfoot>
+        </table>
+    `;
+
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`<!DOCTYPE html><html><head><title>${title}</title>
+        <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+        <style>
+            ${printStyles}
+            table { width: 100%; border-collapse: collapse; }
+            th, td { border: 1px solid #ddd; padding: 8px; }
+            th { background-color: #f5f0e6; color: #0d4d3a; }
+        </style>
+    </head><body>${listHTML}</body></html>`);
+    printWindow.document.close();
+    setTimeout(() => printWindow.print(), 250);
+}

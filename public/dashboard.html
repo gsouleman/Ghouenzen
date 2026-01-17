@@ -414,7 +414,13 @@
                     <div class="panel" id="panel-debtors">
                         <div class="panel-header">
                             <h2>Debtors (People Who Owe You)</h2>
-                            <button class="btn btn-primary btn-sm" onclick="showModal('debtor')">+ Add Debtor</button>
+                            <div>
+                                <button class="btn btn-secondary btn-sm" onclick="printList('debtor')"
+                                    style="margin-right: 10px; background-color: #6c757d; color: white;">🖨 Print
+                                    List</button>
+                                <button class="btn btn-primary btn-sm" onclick="showModal('debtor')">+ Add
+                                    Debtor</button>
+                            </div>
                         </div>
                         <div class="table-wrapper">
                             <table class="data-table">
@@ -448,8 +454,13 @@
                     <div class="panel" id="panel-creditors">
                         <div class="panel-header">
                             <h2>Creditors (People/Institutions You Owe)</h2>
-                            <button class="btn btn-primary btn-sm" onclick="showModal('creditor')">+ Add
-                                Creditor</button>
+                            <div>
+                                <button class="btn btn-secondary btn-sm" onclick="printList('creditor')"
+                                    style="margin-right: 10px; background-color: #6c757d; color: white;">🖨 Print
+                                    List</button>
+                                <button class="btn btn-primary btn-sm" onclick="showModal('creditor')">+ Add
+                                    Creditor</button>
+                            </div>
                         </div>
                         <div class="table-wrapper">
                             <table class="data-table">
