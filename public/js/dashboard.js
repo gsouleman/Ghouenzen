@@ -355,6 +355,12 @@ function showModal(type, data = null) {
                     <option value="other">Other</option>
                 </select>
             </div>
+            
+            <!-- Area Section for Immovable Property -->
+            <div id="area-section" style="display: none; background: #f8f9fa; padding: 10px; border-radius: 4px; border: 1px solid #ddd; margin-bottom: 1rem;">
+                <div class="form-group"><label>Total Area (m²)</label><input type="number" id="f-total-area" step="0.01"></div>
+            </div>
+
             <div class="form-group"><label>Description</label><input type="text" id="f-description" required></div>
             <div class="form-group"><label>Location</label><input type="text" id="f-location"></div>
             
@@ -363,7 +369,15 @@ function showModal(type, data = null) {
                     <input type="checkbox" id="f-is-liquidated" checked style="width: auto; margin: 0;">
                     <label for="f-is-liquidated" style="margin: 0; font-weight: bold; cursor: pointer;">Liquidate to pay debt?</label>
                 </div>
-                <p style="margin: 5px 0 0 25px; font-size: 0.8rem; color: #666;">If unchecked, asset value will be 0 for debt payment.</p>
+                
+                <!-- Dynamic Quantity to Sell -->
+                <div id="sell-qty-wrapper" style="margin-top: 10px; padding-left: 25px;">
+                   <div class="form-group" style="margin-bottom: 5px;">
+                       <label id="l-area-sell-unit" style="font-size: 0.9em;">Quantity to Sell (m²)</label>
+                       <input type="number" id="f-area-to-sell" step="0.01" style="width: 100%;">
+                   </div>
+                   <p style="margin: 0; font-size: 0.8rem; color: #666;">Balance will be included in the asset sale.</p>
+                </div>
             </div>
 
             <div class="form-group"><label>Estimated Value (XAF)</label><input type="number" id="f-value" required></div>
@@ -371,26 +385,72 @@ function showModal(type, data = null) {
             <button type="submit" class="btn btn-primary">${isEdit ? 'Update' : 'Add'} Asset</button>
         </form>`,
         setupAssetListeners: () => {
-            const cb = document.getElementById('f-is-liquidated');
+            const cat = document.getElementById('f-category');
+            const areaSec = document.getElementById('area-section');
+            const totalArea = document.getElementById('f-total-area');
+            const areaSell = document.getElementById('f-area-to-sell');
+            const sellLabel = document.getElementById('l-area-sell-unit');
+            const liqCb = document.getElementById('f-is-liquidated');
+            const sellWrapper = document.getElementById('sell-qty-wrapper');
             const val = document.getElementById('f-value');
-            if (cb && val) {
-                cb.addEventListener('change', () => {
-                    if (!cb.checked) {
-                        val.dataset.oldValue = val.value; // Optional: try to remember
+
+            // Toggle Area Section based on category
+            const updateCategory = () => {
+                if (cat.value === 'immovable') {
+                    areaSec.style.display = 'block';
+                } else {
+                    areaSec.style.display = 'none';
+                    totalArea.value = ''; // Clear if not land
+                }
+                updateUnits(); // Re-check units
+            };
+            if (cat) cat.addEventListener('change', updateCategory);
+
+            // Unit Logic
+            const updateUnits = () => {
+                // Should we show the sell input at all? Only if liquidated is checked
+                // And logic: if Total Area >= 10,000 => ha, else m2
+                const tVal = parseFloat(totalArea.value) || 0;
+                if (tVal >= 10000) {
+                    sellLabel.textContent = 'Quantity to Sell (ha)';
+                    sellLabel.dataset.unit = 'ha';
+                } else {
+                    sellLabel.textContent = 'Quantity to Sell (m²)';
+                    sellLabel.dataset.unit = 'm2';
+                }
+            };
+            if (totalArea) totalArea.addEventListener('input', updateUnits);
+
+            // Liquidated Toggle
+            if (liqCb) {
+                liqCb.addEventListener('change', () => {
+                    if (!liqCb.checked) {
+                        val.dataset.oldValue = val.value;
                         val.value = 0;
-                        // val.readOnly = true; // User might want to edit it to 0 specifically? Or force it.
-                        // "value should be Zero (0) automatically"
                         val.readOnly = true;
                         val.style.backgroundColor = "#eee";
+
+                        sellWrapper.style.display = 'none';
+                        areaSell.value = 0;
                     } else {
                         val.readOnly = false;
                         val.style.backgroundColor = "";
                         if (val.value == 0 && val.dataset.oldValue) val.value = val.dataset.oldValue;
+
+                        sellWrapper.style.display = 'block';
                     }
                 });
-                // Trigger once to set state
-                if (!cb.checked) { val.value = 0; val.readOnly = true; val.style.backgroundColor = "#eee"; }
+                // Initialize
+                if (!liqCb.checked) {
+                    val.value = 0; val.readOnly = true; val.style.backgroundColor = "#eee";
+                    sellWrapper.style.display = 'none';
+                } else {
+                    sellWrapper.style.display = 'block';
+                }
             }
+
+            // Run once
+            updateCategory();
         }
     };
 
@@ -518,14 +578,31 @@ function fillForm(type, data) {
             break;
         case 'asset':
             document.getElementById('f-category').value = data.category;
+            // Trigger category change manually to show/hide area
+            document.getElementById('f-category').dispatchEvent(new Event('change'));
+
             document.getElementById('f-description').value = data.description;
             document.getElementById('f-location').value = data.location || '';
             document.getElementById('f-value').value = data.estimated_value;
             document.getElementById('f-notes').value = data.notes || '';
+
+            // Populate areas
+            const tArea = data.total_area || 0;
+            document.getElementById('f-total-area').value = tArea;
+            document.getElementById('f-total-area').dispatchEvent(new Event('input')); // Update label unit
+
+            // Handle Sell Area Unit Conversion
+            const sellLabel = document.getElementById('l-area-sell-unit');
+            const storedSell = data.area_to_sell || 0;
+            if (tArea >= 10000 && sellLabel.dataset.unit === 'ha') {
+                document.getElementById('f-area-to-sell').value = storedSell / 10000;
+            } else {
+                document.getElementById('f-area-to-sell').value = storedSell;
+            }
+
             const liqCb = document.getElementById('f-is-liquidated');
             if (liqCb) {
                 liqCb.checked = data.is_liquidated !== false; // Default true
-                // Trigger change event to update readonly state
                 liqCb.dispatchEvent(new Event('change'));
             }
             break;
@@ -556,13 +633,23 @@ async function handleSubmit(e, type, id) {
             break;
         case 'asset':
             const isLiq = document.getElementById('f-is-liquidated').checked;
+
+            // Handle Unit Conversion for Save
+            let areaSell = parseFloat(document.getElementById('f-area-to-sell').value) || 0;
+            const unitType = document.getElementById('l-area-sell-unit').dataset.unit;
+            if (unitType === 'ha') {
+                areaSell = areaSell * 10000;
+            }
+
             data = {
                 category: document.getElementById('f-category').value,
                 description: document.getElementById('f-description').value,
                 location: document.getElementById('f-location').value,
                 estimated_value: parseFloat(document.getElementById('f-value').value) || 0,
                 notes: document.getElementById('f-notes').value,
-                is_liquidated: isLiq
+                is_liquidated: isLiq,
+                total_area: parseFloat(document.getElementById('f-total-area').value) || 0,
+                area_to_sell: areaSell
             };
             break;
     }
