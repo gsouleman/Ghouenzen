@@ -134,6 +134,9 @@ async function initDB() {
                     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='assets' AND column_name='area_to_sell') THEN 
                         ALTER TABLE assets ADD COLUMN area_to_sell DECIMAL(15,2) DEFAULT 0; 
                     END IF;
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='assets' AND column_name='price_per_m2') THEN 
+                        ALTER TABLE assets ADD COLUMN price_per_m2 DECIMAL(15,2) DEFAULT 0; 
+                    END IF;
                 END $$;
             `);
         } catch (alterErr) {
@@ -556,7 +559,8 @@ app.get('/api/assets', async (req, res) => {
             ...r,
             estimated_value: parseFloat(r.estimated_value) || 0,
             total_area: parseFloat(r.total_area) || 0,
-            area_to_sell: parseFloat(r.area_to_sell) || 0
+            area_to_sell: parseFloat(r.area_to_sell) || 0,
+            price_per_m2: parseFloat(r.price_per_m2) || 0
         })));
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -567,10 +571,10 @@ app.post('/api/assets', async (req, res) => {
     try {
         const testator = await getCurrentTestator();
         if (!testator) return res.status(400).json({ error: 'No testator' });
-        const { category, description, location, estimated_value, notes, is_liquidated, total_area, area_to_sell } = req.body;
+        const { category, description, location, estimated_value, notes, is_liquidated, total_area, area_to_sell, price_per_m2 } = req.body;
         const result = await pool.query(
-            'INSERT INTO assets (testator_id, category, description, location, estimated_value, notes, is_liquidated, total_area, area_to_sell) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id',
-            [testator.id, category, description, location || '', estimated_value || 0, notes || '', is_liquidated !== undefined ? is_liquidated : true, total_area || 0, area_to_sell || 0]
+            'INSERT INTO assets (testator_id, category, description, location, estimated_value, notes, is_liquidated, total_area, area_to_sell, price_per_m2) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id',
+            [testator.id, category, description, location || '', estimated_value || 0, notes || '', is_liquidated !== undefined ? is_liquidated : true, total_area || 0, area_to_sell || 0, price_per_m2 || 0]
         );
         res.json({ id: result.rows[0].id, message: 'Asset added' });
     } catch (err) {
@@ -580,10 +584,10 @@ app.post('/api/assets', async (req, res) => {
 
 app.put('/api/assets/:id', async (req, res) => {
     try {
-        const { category, description, location, estimated_value, notes, is_liquidated, total_area, area_to_sell } = req.body;
+        const { category, description, location, estimated_value, notes, is_liquidated, total_area, area_to_sell, price_per_m2 } = req.body;
         await pool.query(
-            'UPDATE assets SET category = $1, description = $2, location = $3, estimated_value = $4, notes = $5, is_liquidated = $6, total_area = $7, area_to_sell = $8 WHERE id = $9',
-            [category, description, location || '', estimated_value || 0, notes || '', is_liquidated !== undefined ? is_liquidated : true, total_area || 0, area_to_sell || 0, req.params.id]
+            'UPDATE assets SET category = $1, description = $2, location = $3, estimated_value = $4, notes = $5, is_liquidated = $6, total_area = $7, area_to_sell = $8, price_per_m2 = $9 WHERE id = $10',
+            [category, description, location || '', estimated_value || 0, notes || '', is_liquidated !== undefined ? is_liquidated : true, total_area || 0, area_to_sell || 0, price_per_m2 || 0, req.params.id]
         );
         res.json({ message: 'Asset updated' });
     } catch (err) {

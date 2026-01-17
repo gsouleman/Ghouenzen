@@ -359,6 +359,7 @@ function showModal(type, data = null) {
             <!-- Area Section for Immovable Property -->
             <div id="area-section" style="display: none; background: #f8f9fa; padding: 10px; border-radius: 4px; border: 1px solid #ddd; margin-bottom: 1rem;">
                 <div class="form-group"><label>Total Area (m²)</label><input type="number" id="f-total-area" step="0.01"></div>
+                <div class="form-group"><label>Price per m² (XAF)</label><input type="number" id="f-price-per-m2" step="0.01"></div>
             </div>
 
             <div class="form-group"><label>Description</label><input type="text" id="f-description" required></div>
@@ -393,14 +394,38 @@ function showModal(type, data = null) {
             const liqCb = document.getElementById('f-is-liquidated');
             const sellWrapper = document.getElementById('sell-qty-wrapper');
             const val = document.getElementById('f-value');
+            const priceInput = document.getElementById('f-price-per-m2');
+
+            // Calculation Hook
+            const calculateValue = () => {
+                if (cat.value !== 'immovable') return;
+                if (!liqCb.checked) {
+                    val.value = 0;
+                    return;
+                }
+
+                const price = parseFloat(priceInput.value) || 0;
+                let sellQty = parseFloat(areaSell.value) || 0;
+
+                // Check unit
+                if (sellLabel.dataset.unit === 'ha') {
+                    sellQty = sellQty * 10000;
+                }
+
+                const calculated = sellQty * price;
+                val.value = Math.round(calculated);
+            };
 
             // Toggle Area Section based on category
             const updateCategory = () => {
                 if (cat.value === 'immovable') {
                     areaSec.style.display = 'block';
+                    if (liqCb.checked) val.readOnly = true;
                 } else {
                     areaSec.style.display = 'none';
                     totalArea.value = ''; // Clear if not land
+                    priceInput.value = '';
+                    val.readOnly = false;
                 }
                 updateUnits(); // Re-check units
             };
@@ -418,8 +443,11 @@ function showModal(type, data = null) {
                     sellLabel.textContent = 'Quantity to Sell (m²)';
                     sellLabel.dataset.unit = 'm2';
                 }
+                calculateValue();
             };
             if (totalArea) totalArea.addEventListener('input', updateUnits);
+            if (priceInput) priceInput.addEventListener('input', calculateValue);
+            if (areaSell) areaSell.addEventListener('input', calculateValue);
 
             // Liquidated Toggle
             if (liqCb) {
@@ -433,11 +461,12 @@ function showModal(type, data = null) {
                         sellWrapper.style.display = 'none';
                         areaSell.value = 0;
                     } else {
-                        val.readOnly = false;
+                        val.readOnly = cat.value === 'immovable';
                         val.style.backgroundColor = "";
                         if (val.value == 0 && val.dataset.oldValue) val.value = val.dataset.oldValue;
 
                         sellWrapper.style.display = 'block';
+                        if (cat.value === 'immovable') calculateValue();
                     }
                 });
                 // Initialize
@@ -589,6 +618,7 @@ function fillForm(type, data) {
             // Populate areas
             const tArea = data.total_area || 0;
             document.getElementById('f-total-area').value = tArea;
+            document.getElementById('f-price-per-m2').value = data.price_per_m2 || '';
             document.getElementById('f-total-area').dispatchEvent(new Event('input')); // Update label unit
 
             // Handle Sell Area Unit Conversion
@@ -649,7 +679,8 @@ async function handleSubmit(e, type, id) {
                 notes: document.getElementById('f-notes').value,
                 is_liquidated: isLiq,
                 total_area: parseFloat(document.getElementById('f-total-area').value) || 0,
-                area_to_sell: areaSell
+                area_to_sell: areaSell,
+                price_per_m2: parseFloat(document.getElementById('f-price-per-m2').value) || 0
             };
             break;
     }
