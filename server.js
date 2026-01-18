@@ -51,6 +51,23 @@ async function initDB() {
             )
         `);
 
+        // Migration: Add role and full_name columns if they don't exist
+        try {
+            await client.query(`
+                DO $$ 
+                BEGIN 
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='role') THEN 
+                        ALTER TABLE users ADD COLUMN role VARCHAR(50) DEFAULT 'user'; 
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='full_name') THEN 
+                        ALTER TABLE users ADD COLUMN full_name VARCHAR(255); 
+                    END IF;
+                END $$;
+            `);
+        } catch (alterErr) {
+            console.log('User column migration note:', alterErr.message);
+        }
+
         // Create Default Admin User
         const adminCheck = await client.query("SELECT * FROM users WHERE username = 'admin'");
         if (adminCheck.rows.length === 0) {
