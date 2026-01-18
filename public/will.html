@@ -11,6 +11,11 @@
         href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Outfit:wght@300;400;500;600;700&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="/css/style.css">
+    <script>
+        if (!localStorage.getItem('token')) {
+            window.location.replace('/login.html');
+        }
+    </script>
     <style>
         .editable-section {
             position: relative;
@@ -237,8 +242,7 @@
             </a>
             <div class="nav-links">
                 <a href="/" class="nav-link">Home</a>
-                <a href="/dashboard" class="nav-link">Dashboard</a>
-                <a href="/will" class="nav-link active">Will Document</a>
+                <a href="#" onclick="logout()" class="nav-link">Logout</a>
             </div>
         </div>
     </nav>
@@ -334,7 +338,8 @@
                     <div id="distribution-extra" class="editable-content" contenteditable="false"
                         data-placeholder="Click edit to add additional distribution instructions..."></div>
                     <p>The specific shares shall be calculated by a qualified Islamic legal authority based on the
-                        <strong>NET ESTATE VALUE</strong>.</p>
+                        <strong>NET ESTATE VALUE</strong>.
+                    </p>
                 </section>
 
                 <section class="will-section editable-section">
@@ -548,6 +553,16 @@
     <div id="toast" class="toast"></div>
 
     <script src="/js/app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            if (user.full_name) {
+                document.querySelectorAll('.logo-text').forEach(el => {
+                    el.textContent = `Al-Wasiyyah ${user.full_name}`;
+                });
+            }
+        });
+    </script>
     <script>
         let willEdits = {};
         let testatorData = {};

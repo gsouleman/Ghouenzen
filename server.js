@@ -2,7 +2,11 @@ const express = require('express');
 const { Pool } = require('pg');
 const cors = require('cors');
 const path = require('path');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 require('dotenv').config();
+
+const JWT_SECRET = process.env.JWT_SECRET || 'al-wasiyyah-secret-key-2025';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -35,10 +39,34 @@ async function initDB() {
         client = await pool.connect();
         console.log('Connected to PostgreSQL database');
 
+        // Create Users Table
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                username VARCHAR(255) UNIQUE NOT NULL,
+                password_hash VARCHAR(255) NOT NULL,
+                full_name VARCHAR(255),
+                role VARCHAR(50) DEFAULT 'user',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // Create Default Admin User
+        const adminCheck = await client.query("SELECT * FROM users WHERE username = 'admin'");
+        if (adminCheck.rows.length === 0) {
+            const hashedPassword = await bcrypt.hash('admin', 10);
+            await client.query(
+                "INSERT INTO users (username, password_hash, full_name, role) VALUES ($1, $2, $3, $4)",
+                ['admin', hashedPassword, 'System Administrator', 'admin']
+            );
+            console.log('Default admin user created');
+        }
+
         // Create tables one by one to avoid syntax issues
         await client.query(`
             CREATE TABLE IF NOT EXISTS testator (
                 id SERIAL PRIMARY KEY,
+                user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
                 full_name VARCHAR(255) NOT NULL,
                 address TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -46,10 +74,31 @@ async function initDB() {
             )
         `);
 
+        // Add user_id column if not exists (migration)
+        try {
+            await client.query(`
+                DO $$ 
+                BEGIN 
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='testator' AND column_name='user_id') THEN 
+                        ALTER TABLE testator ADD COLUMN user_id INTEGER REFERENCES users(id) ON DELETE CASCADE; 
+                    END IF;
+                END $$;
+            `);
+
+            // Link existing testators to admin user if user_id is null
+            const adminUser = await client.query("SELECT id FROM users WHERE username = 'admin'");
+            if (adminUser.rows.length > 0) {
+                await client.query("UPDATE testator SET user_id = $1 WHERE user_id IS NULL", [adminUser.rows[0].id]);
+            }
+
+        } catch (alterErr) {
+            console.log('Column migration note:', alterErr.message);
+        }
+
         await client.query(`
             CREATE TABLE IF NOT EXISTS heirs (
                 id SERIAL PRIMARY KEY,
-                testator_id INTEGER,
+                testator_id INTEGER REFERENCES testator(id) ON DELETE CASCADE,
                 relation VARCHAR(50) NOT NULL,
                 full_name VARCHAR(255) NOT NULL,
                 share_type VARCHAR(50)
@@ -59,7 +108,7 @@ async function initDB() {
         await client.query(`
             CREATE TABLE IF NOT EXISTS executors (
                 id SERIAL PRIMARY KEY,
-                testator_id INTEGER,
+                testator_id INTEGER REFERENCES testator(id) ON DELETE CASCADE,
                 full_name VARCHAR(255) NOT NULL,
                 contact VARCHAR(255)
             )
@@ -68,7 +117,7 @@ async function initDB() {
         await client.query(`
             CREATE TABLE IF NOT EXISTS debtors (
                 id SERIAL PRIMARY KEY,
-                testator_id INTEGER,
+                testator_id INTEGER REFERENCES testator(id) ON DELETE CASCADE,
                 full_name VARCHAR(255) NOT NULL,
                 contact VARCHAR(255),
                 gender VARCHAR(10) DEFAULT 'male',
@@ -89,7 +138,7 @@ async function initDB() {
         await client.query(`
             CREATE TABLE IF NOT EXISTS creditors (
                 id SERIAL PRIMARY KEY,
-                testator_id INTEGER,
+                testator_id INTEGER REFERENCES testator(id) ON DELETE CASCADE,
                 full_name VARCHAR(255) NOT NULL,
                 contact VARCHAR(255),
                 gender VARCHAR(10) DEFAULT 'male',
@@ -110,7 +159,7 @@ async function initDB() {
         await client.query(`
             CREATE TABLE IF NOT EXISTS assets (
                 id SERIAL PRIMARY KEY,
-                testator_id INTEGER,
+                testator_id INTEGER REFERENCES testator(id) ON DELETE CASCADE,
                 category VARCHAR(50) NOT NULL,
                 description TEXT NOT NULL,
                 location VARCHAR(255),
@@ -147,37 +196,12 @@ async function initDB() {
         await client.query(`
             CREATE TABLE IF NOT EXISTS will_edits (
                 id SERIAL PRIMARY KEY,
-                testator_id INTEGER,
+                testator_id INTEGER REFERENCES testator(id) ON DELETE CASCADE,
                 section_name VARCHAR(100) NOT NULL,
                 content TEXT,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
-
-        // Create line items tables if they don't exist
-        try {
-            await client.query(`
-                CREATE TABLE IF NOT EXISTS debtor_items (
-                    id SERIAL PRIMARY KEY,
-                    debtor_id INTEGER,
-                    reason TEXT,
-                    amount DECIMAL(15,2) DEFAULT 0,
-                    notes TEXT
-                )
-            `);
-            await client.query(`
-                CREATE TABLE IF NOT EXISTS creditor_items (
-                    id SERIAL PRIMARY KEY,
-                    creditor_id INTEGER,
-                    reason TEXT,
-                    amount DECIMAL(15,2) DEFAULT 0,
-                    notes TEXT
-                )
-            `);
-            console.log('Line items tables ready');
-        } catch (migrationErr) {
-            console.log('Migration note:', migrationErr.message);
-        }
 
         // Remove duplicate items (keeps the one with lowest ID)
         try {
@@ -211,10 +235,10 @@ async function initDB() {
     }
 }
 
-// Helper: Get current testator
-async function getCurrentTestator() {
+// Helper: Get testator for specific user
+async function getTestatorForUser(userId) {
     try {
-        const result = await pool.query('SELECT * FROM testator ORDER BY id DESC LIMIT 1');
+        const result = await pool.query('SELECT * FROM testator WHERE user_id = $1 ORDER BY id DESC LIMIT 1', [userId]);
         return result.rows[0] || null;
     } catch (err) {
         console.error('Error getting testator:', err.message);
@@ -222,12 +246,91 @@ async function getCurrentTestator() {
     }
 }
 
+// Validation Middleware
+const authenticateToken = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (!token) return res.status(401).json({ error: 'Access denied. No token provided.' });
+
+    jwt.verify(token, JWT_SECRET, (err, user) => {
+        if (err) return res.status(403).json({ error: 'Invalid token.' });
+        req.user = user;
+        next();
+    });
+};
+
 // API Routes
+
+// Authentication
+app.post('/api/auth/register', async (req, res) => {
+    try {
+        const { username, password, full_name, role } = req.body;
+
+        // Basic validation
+        if (!username || !password) {
+            return res.status(400).json({ error: 'Username and password are required' });
+        }
+
+        // Check exists
+        const userExist = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
+        if (userExist.rows.length > 0) {
+            return res.status(400).json({ error: 'Username already exists' });
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        const result = await pool.query(
+            'INSERT INTO users (username, password_hash, full_name, role) VALUES ($1, $2, $3, $4) RETURNING id, username, full_name, role',
+            [username, hashedPassword, full_name || '', role || 'user']
+        );
+
+        res.json({ message: 'User created successfully', user: result.rows[0] });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/auth/login', async (req, res) => {
+    try {
+        const { username, password } = req.body;
+        const result = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
+
+        if (result.rows.length === 0) {
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+
+        const user = result.rows[0];
+        const validPassword = await bcrypt.compare(password, user.password_hash);
+
+        if (!validPassword) {
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+
+        const token = jwt.sign(
+            { id: user.id, username: user.username, role: user.role, full_name: user.full_name },
+            JWT_SECRET,
+            { expiresIn: '24h' }
+        );
+
+        res.json({ token, user: { id: user.id, username: user.username, full_name: user.full_name, role: user.role } });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Middleware for all other API routes
+app.use('/api', (req, res, next) => {
+    if (req.path === '/auth/login' || req.path === '/auth/register') {
+        return next();
+    }
+    authenticateToken(req, res, next);
+});
 
 // Testator
 app.get('/api/testator', async (req, res) => {
     try {
-        const testator = await getCurrentTestator();
+        const testator = await getTestatorForUser(req.user.id);
         if (!testator) return res.status(404).json({ error: 'No testator found' });
         res.json(testator);
     } catch (err) {
@@ -239,8 +342,8 @@ app.post('/api/testator', async (req, res) => {
     try {
         const { full_name, address } = req.body;
         const result = await pool.query(
-            'INSERT INTO testator (full_name, address) VALUES ($1, $2) RETURNING id',
-            [full_name, address || '']
+            'INSERT INTO testator (user_id, full_name, address) VALUES ($1, $2, $3) RETURNING id',
+            [req.user.id, full_name, address || '']
         );
         res.json({ id: result.rows[0].id, message: 'Testator created' });
     } catch (err) {
@@ -252,8 +355,8 @@ app.put('/api/testator/:id', async (req, res) => {
     try {
         const { full_name, address } = req.body;
         await pool.query(
-            'UPDATE testator SET full_name = $1, address = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3',
-            [full_name, address || '', req.params.id]
+            'UPDATE testator SET full_name = $1, address = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3 AND user_id = $4',
+            [full_name, address || '', req.params.id, req.user.id]
         );
         res.json({ message: 'Testator updated' });
     } catch (err) {
@@ -264,7 +367,7 @@ app.put('/api/testator/:id', async (req, res) => {
 // Heirs
 app.get('/api/heirs', async (req, res) => {
     try {
-        const testator = await getCurrentTestator();
+        const testator = await getTestatorForUser(req.user.id);
         if (!testator) return res.json([]);
         const result = await pool.query('SELECT * FROM heirs WHERE testator_id = $1 ORDER BY id', [testator.id]);
         res.json(result.rows);
@@ -275,7 +378,7 @@ app.get('/api/heirs', async (req, res) => {
 
 app.post('/api/heirs', async (req, res) => {
     try {
-        const testator = await getCurrentTestator();
+        const testator = await getTestatorForUser(req.user.id);
         if (!testator) return res.status(400).json({ error: 'No testator' });
         const { relation, full_name, share_type } = req.body;
         const result = await pool.query(
@@ -313,7 +416,7 @@ app.delete('/api/heirs/:id', async (req, res) => {
 // Executors
 app.get('/api/executors', async (req, res) => {
     try {
-        const testator = await getCurrentTestator();
+        const testator = await getTestatorForUser(req.user.id);
         if (!testator) return res.json([]);
         const result = await pool.query('SELECT * FROM executors WHERE testator_id = $1 ORDER BY id', [testator.id]);
         res.json(result.rows);
@@ -324,7 +427,7 @@ app.get('/api/executors', async (req, res) => {
 
 app.post('/api/executors', async (req, res) => {
     try {
-        const testator = await getCurrentTestator();
+        const testator = await getTestatorForUser(req.user.id);
         if (!testator) return res.status(400).json({ error: 'No testator' });
         const { full_name, contact } = req.body;
         const result = await pool.query(
@@ -362,7 +465,7 @@ app.delete('/api/executors/:id', async (req, res) => {
 // Debtors
 app.get('/api/debtors', async (req, res) => {
     try {
-        const testator = await getCurrentTestator();
+        const testator = await getTestatorForUser(req.user.id);
         if (!testator) return res.json([]);
         const debtorsResult = await pool.query('SELECT * FROM debtors WHERE testator_id = $1 ORDER BY id', [testator.id]);
 
@@ -389,7 +492,7 @@ app.get('/api/debtors', async (req, res) => {
 
 app.post('/api/debtors', async (req, res) => {
     try {
-        const testator = await getCurrentTestator();
+        const testator = await getTestatorForUser(req.user.id);
         if (!testator) return res.status(400).json({ error: 'No testator' });
         const { full_name, contact, gender, language, items } = req.body;
 
@@ -457,7 +560,7 @@ app.delete('/api/debtors/:id', async (req, res) => {
 // Creditors
 app.get('/api/creditors', async (req, res) => {
     try {
-        const testator = await getCurrentTestator();
+        const testator = await getTestatorForUser(req.user.id);
         if (!testator) return res.json([]);
         const creditorsResult = await pool.query('SELECT * FROM creditors WHERE testator_id = $1 ORDER BY id', [testator.id]);
 
@@ -484,7 +587,7 @@ app.get('/api/creditors', async (req, res) => {
 
 app.post('/api/creditors', async (req, res) => {
     try {
-        const testator = await getCurrentTestator();
+        const testator = await getTestatorForUser(req.user.id);
         if (!testator) return res.status(400).json({ error: 'No testator' });
         const { full_name, contact, gender, language, items } = req.body;
 
@@ -552,7 +655,7 @@ app.delete('/api/creditors/:id', async (req, res) => {
 // Assets
 app.get('/api/assets', async (req, res) => {
     try {
-        const testator = await getCurrentTestator();
+        const testator = await getTestatorForUser(req.user.id);
         if (!testator) return res.json([]);
         const result = await pool.query('SELECT * FROM assets WHERE testator_id = $1 ORDER BY id', [testator.id]);
         res.json(result.rows.map(r => ({
@@ -569,7 +672,7 @@ app.get('/api/assets', async (req, res) => {
 
 app.post('/api/assets', async (req, res) => {
     try {
-        const testator = await getCurrentTestator();
+        const testator = await getTestatorForUser(req.user.id);
         if (!testator) return res.status(400).json({ error: 'No testator' });
         const { category, description, location, estimated_value, notes, is_liquidated, total_area, area_to_sell, price_per_m2 } = req.body;
         const result = await pool.query(
@@ -607,7 +710,7 @@ app.delete('/api/assets/:id', async (req, res) => {
 // Summary with Islamic inheritance calculation
 app.get('/api/summary', async (req, res) => {
     try {
-        const testator = await getCurrentTestator();
+        const testator = await getTestatorForUser(req.user.id);
         if (!testator) return res.status(404).json({ error: 'No testator found' });
 
         const [heirsRes, debtorsRes, creditorsRes, assetsRes, executorsRes, debtorItemsRes, creditorItemsRes] = await Promise.all([
@@ -767,8 +870,8 @@ app.post('/api/load-demo', async (req, res) => {
 
         // Create testator
         const testatorResult = await client.query(
-            'INSERT INTO testator (full_name, address) VALUES ($1, $2) RETURNING id',
-            ['GHOUENZEN SOULEMANOU', 'Mankon-Bamenda, Cameroon']
+            'INSERT INTO testator (user_id, full_name, address) VALUES ($1, $2, $3) RETURNING id',
+            [req.user.id, 'GHOUENZEN SOULEMANOU', 'Mankon-Bamenda, Cameroon']
         );
         const testatorId = testatorResult.rows[0].id;
 
@@ -838,7 +941,7 @@ app.post('/api/reset', async (req, res) => {
 // Will Edits - Save
 app.post('/api/will-edits', async (req, res) => {
     try {
-        const testator = await getCurrentTestator();
+        const testator = await getTestatorForUser(req.user.id);
         if (!testator) return res.status(400).json({ error: 'No testator' });
 
         const { edits } = req.body;
@@ -865,7 +968,7 @@ app.post('/api/will-edits', async (req, res) => {
 // Will Edits - Load
 app.get('/api/will-edits', async (req, res) => {
     try {
-        const testator = await getCurrentTestator();
+        const testator = await getTestatorForUser(req.user.id);
         if (!testator) return res.json({ edits: {} });
 
         const result = await pool.query(

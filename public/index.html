@@ -1,17 +1,26 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Al-Wasiyyah | Islamic Will & Estate Management</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Outfit:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="/css/style.css">
+    <script>
+        if (!localStorage.getItem('token')) {
+            window.location.replace('/login.html');
+        }
+    </script>
 </head>
+
 <body>
 
-    
+
     <nav class="navbar">
         <div class="nav-container">
             <a href="/" class="logo">
@@ -20,8 +29,7 @@
             </a>
             <div class="nav-links">
                 <a href="/" class="nav-link active">Home</a>
-                <a href="/dashboard" class="nav-link">Dashboard</a>
-                <a href="/will" class="nav-link">Will Document</a>
+                <a href="#" onclick="logout()" class="nav-link">Logout</a>
             </div>
         </div>
     </nav>
@@ -30,7 +38,8 @@
         <div class="hero-content">
             <div class="bismillah">بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ</div>
             <h1 class="hero-title">Personal Estate<br>Management System</h1>
-            <p class="hero-subtitle">Prepare your legacy according to the laws of Al-Faraid with complete transparency and ease</p>
+            <p class="hero-subtitle">Prepare your legacy according to the laws of Al-Faraid with complete transparency
+                and ease</p>
             <div class="hero-buttons">
                 <a href="/dashboard" class="btn btn-primary">
                     <span>◈</span> Get Started
@@ -42,8 +51,9 @@
     <section class="features">
         <div class="container">
             <h2 class="section-title">Comprehensive Estate Planning</h2>
-            <p class="section-subtitle">Everything you need to prepare your Islamic will in compliance with Shariah law</p>
-            
+            <p class="section-subtitle">Everything you need to prepare your Islamic will in compliance with Shariah law
+            </p>
+
             <div class="features-grid">
                 <div class="feature-card">
                     <div class="feature-icon">🏠</div>
@@ -116,7 +126,8 @@
                 <div class="principles-text">
                     <h2>Based on Islamic Principles</h2>
                     <blockquote class="hadith">
-                        "It is not permissible for any Muslim who has something to bequeath to stay for two nights without having his will written."
+                        "It is not permissible for any Muslim who has something to bequeath to stay for two nights
+                        without having his will written."
                         <cite>— Sahih al-Bukhari & Muslim</cite>
                     </blockquote>
                     <p>This system follows the order of estate distribution:</p>
@@ -144,7 +155,8 @@
                     <p>Islamic Will & Estate Management</p>
                 </div>
                 <div class="footer-note">
-                    <p>This tool is for planning purposes only. Please consult with a qualified Islamic scholar and legal professional for final execution.</p>
+                    <p>This tool is for planning purposes only. Please consult with a qualified Islamic scholar and
+                        legal professional for final execution.</p>
                 </div>
             </div>
             <div class="footer-bottom">
@@ -156,5 +168,16 @@
     <div id="toast" class="toast"></div>
 
     <script src="/js/app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            if (user.full_name) {
+                document.querySelectorAll('.logo-text').forEach(el => {
+                    el.textContent = `Al-Wasiyyah ${user.full_name}`;
+                });
+            }
+        });
+    </script>
 </body>
+
 </html>
