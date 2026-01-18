@@ -60,6 +60,7 @@
                             <th>ID</th>
                             <th>Username</th>
                             <th>Full Name</th>
+                            <th>Email</th>
                             <th>Role</th>
                             <th>Created At</th>
                             <th>Actions</th>
@@ -88,6 +89,10 @@
                 <div class="form-group">
                     <label>Full Name</label>
                     <input type="text" id="full-name">
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="email" placeholder="user@example.com">
                 </div>
                 <div class="form-group">
                     <label>Role</label>
@@ -127,10 +132,11 @@
                         <td>${user.id}</td>
                         <td>${user.username}</td>
                         <td>${user.full_name || '-'}</td>
+                        <td>${user.email || '-'}</td>
                         <td><span style="padding: 2px 8px; background: ${getRoleColor(user.role)}; color: white; border-radius: 4px;">${user.role}</span></td>
                         <td>${new Date(user.created_at).toLocaleDateString()}</td>
                         <td>
-                            <button class="action-btn edit" onclick="editUser(${user.id}, '${user.username}', '${user.full_name || ''}', '${user.role}')">Edit</button>
+                            <button class="action-btn edit" onclick="editUser(${user.id}, '${user.username}', '${user.full_name || ''}', '${user.email || ''}', '${user.role}')">Edit</button>
                             <button class="action-btn" style="background:#555; color:white;" onclick="resetUserPassword(${user.id})">Reset PWD</button>
                             <button class="action-btn delete" onclick="deleteUser(${user.id})">Delete</button>
                         </td>
@@ -157,6 +163,7 @@
             document.getElementById('username').value = '';
             document.getElementById('username').disabled = false;
             document.getElementById('full-name').value = '';
+            document.getElementById('email').value = '';
             document.getElementById('role').value = 'user';
             document.getElementById('password').value = '';
             document.getElementById('password').required = true;
@@ -164,12 +171,13 @@
             document.getElementById('user-modal').style.display = 'flex';
         }
 
-        function editUser(id, username, fullName, role) {
+        function editUser(id, username, fullName, email, role) {
             document.getElementById('modal-title').textContent = 'Edit User';
             document.getElementById('user-id').value = id;
             document.getElementById('username').value = username;
             document.getElementById('username').disabled = true; // Cannot change username
             document.getElementById('full-name').value = fullName;
+            document.getElementById('email').value = email;
             document.getElementById('role').value = role;
             document.getElementById('password').value = '';
             document.getElementById('password').required = false; // Not required for edit
@@ -187,13 +195,14 @@
             const id = document.getElementById('user-id').value;
             const username = document.getElementById('username').value;
             const full_name = document.getElementById('full-name').value;
+            const email = document.getElementById('email').value;
             const role = document.getElementById('role').value;
             const password = document.getElementById('password').value;
 
             try {
                 if (id) {
                     // Update
-                    await apiPut(`/api/users/${id}`, { full_name, role });
+                    await apiPut(`/api/users/${id}`, { full_name, email, role });
                     // If password provided, reset it separately or handle in one go? 
                     // My backend separated reset-password, but I can add it if needed.
                     // Actually, let's keep it simple. If checking update doesn't support password, then ignore it or warn.
@@ -205,7 +214,7 @@
                     showToast('User updated successfully');
                 } else {
                     // Create
-                    await apiPost('/api/users', { username, password, full_name, role });
+                    await apiPost('/api/users', { username, password, full_name, email, role });
                     showToast('User created successfully');
                 }
                 closeUserModal();
