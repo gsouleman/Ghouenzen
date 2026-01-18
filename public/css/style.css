@@ -346,33 +346,46 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    gap: 2rem;
-    flex-wrap: wrap;
-    margin-top: 3rem;
+    gap: 1rem;
+    margin-top: 4rem;
     max-width: 1200px;
     margin-left: auto;
     margin-right: auto;
-}
-
-.step {
-    text-align: left;
-    max-width: 250px;
     position: relative;
 }
 
+.step {
+    text-align: center;
+    flex: 1;
+    position: relative;
+    z-index: 2;
+    background: white;
+    /* To hide line behind if needed */
+    padding: 0 1rem;
+}
+
 .step-number {
-    width: 40px;
-    height: 40px;
-    background: var(--primary);
-    color: white;
-    font-family: var(--font-body);
-    font-size: 1.2rem;
+    width: 60px;
+    height: 60px;
+    background: white;
+    color: var(--primary);
+    border: 2px solid var(--primary);
+    font-family: var(--font-display);
+    font-size: 1.5rem;
     font-weight: 700;
-    border-radius: 0;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 1rem;
+    margin: 0 auto 1.5rem;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.step:hover .step-number {
+    background: var(--primary);
+    color: white;
+    transform: scale(1.1);
 }
 
 .step h3 {
@@ -388,7 +401,14 @@ body {
 }
 
 .step-line {
-    display: none;
+    display: block;
+    flex: 1;
+    height: 2px;
+    background: #E0E0E0;
+    margin-top: 30px;
+    /* Aligns with center of 60px circle */
+    position: relative;
+    z-index: 1;
 }
 
 /* Principles */
