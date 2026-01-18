@@ -60,6 +60,9 @@ async function initDB() {
                 ['admin', hashedPassword, 'System Administrator', 'admin']
             );
             console.log('Default admin user created');
+        } else {
+            // Ensure admin has admin role if it already exists
+            await client.query("UPDATE users SET role = 'admin' WHERE username = 'admin'");
         }
 
         // Create tables one by one to avoid syntax issues
