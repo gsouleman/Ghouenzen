@@ -176,6 +176,15 @@
                     el.textContent = `Al-Wasiyyah ${user.full_name}`;
                 });
             }
+            // Show Admin Link if admin
+            if (user.role === 'admin') {
+                const navLinks = document.querySelector('.nav-links');
+                const adminLink = document.createElement('a');
+                adminLink.href = '/admin.html';
+                adminLink.className = 'nav-link';
+                adminLink.textContent = 'Admin Panel';
+                navLinks.insertBefore(adminLink, navLinks.firstChild);
+            }
         });
     </script>
 </body>

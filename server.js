@@ -319,6 +319,116 @@ app.post('/api/auth/login', async (req, res) => {
     }
 });
 
+// Middleware: Role Authorization
+const authorizeRole = (...roles) => {
+    return (req, res, next) => {
+        if (!req.user || !roles.includes(req.user.role)) {
+            return res.status(403).json({ error: 'Access denied. Insufficient permissions.' });
+        }
+        next();
+    };
+};
+
+// User Management Routes (Admin Only)
+
+// GET /api/users - List all users
+app.get('/api/users', authenticateToken, authorizeRole('admin'), async (req, res) => {
+    try {
+        const result = await pool.query('SELECT id, username, full_name, role, created_at FROM users ORDER BY id ASC');
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// POST /api/users - Create new user (Admin)
+app.post('/api/users', authenticateToken, authorizeRole('admin'), async (req, res) => {
+    try {
+        const { username, password, full_name, role } = req.body;
+        if (!username || !password) return res.status(400).json({ error: 'Username and password required' });
+
+        const userExist = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
+        if (userExist.rows.length > 0) return res.status(400).json({ error: 'Username already exists' });
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const result = await pool.query(
+            'INSERT INTO users (username, password_hash, full_name, role) VALUES ($1, $2, $3, $4) RETURNING id, username, full_name, role',
+            [username, hashedPassword, full_name || '', role || 'user']
+        );
+        res.json(result.rows[0]);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// PUT /api/users/:id - Update user (Admin)
+app.put('/api/users/:id', authenticateToken, authorizeRole('admin'), async (req, res) => {
+    try {
+        const { full_name, role } = req.body;
+        const userId = req.params.id;
+
+        const result = await pool.query(
+            'UPDATE users SET full_name = $1, role = $2 WHERE id = $3 RETURNING id, username, full_name, role',
+            [full_name, role, userId]
+        );
+
+        if (result.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+        res.json(result.rows[0]);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// DELETE /api/users/:id - Delete user (Admin)
+app.delete('/api/users/:id', authenticateToken, authorizeRole('admin'), async (req, res) => {
+    try {
+        const userId = req.params.id;
+        // Prevent deleting self
+        if (parseInt(userId) === req.user.id) return res.status(400).json({ error: 'Cannot delete your own account' });
+
+        const result = await pool.query('DELETE FROM users WHERE id = $1 RETURNING id', [userId]);
+        if (result.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+        res.json({ message: 'User deleted successfully' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// POST /api/users/:id/reset-password - Admin Reset
+app.post('/api/users/:id/reset-password', authenticateToken, authorizeRole('admin'), async (req, res) => {
+    try {
+        const { newPassword } = req.body;
+        const userId = req.params.id;
+        if (!newPassword) return res.status(400).json({ error: 'New password required' });
+
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        await pool.query('UPDATE users SET password_hash = $1 WHERE id = $2', [hashedPassword, userId]);
+        res.json({ message: 'Password reset successfully' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// POST /api/auth/change-password - User Self-Change
+app.post('/api/auth/change-password', authenticateToken, async (req, res) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+        if (!currentPassword || !newPassword) return res.status(400).json({ error: 'Current and new password required' });
+
+        const userResult = await pool.query('SELECT * FROM users WHERE id = $1', [req.user.id]);
+        const user = userResult.rows[0];
+
+        const validPassword = await bcrypt.compare(currentPassword, user.password_hash);
+        if (!validPassword) return res.status(401).json({ error: 'Invalid current password' });
+
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        await pool.query('UPDATE users SET password_hash = $1 WHERE id = $2', [hashedPassword, req.user.id]);
+        res.json({ message: 'Password changed successfully' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Middleware for all other API routes
 app.use('/api', (req, res, next) => {
     if (req.path === '/auth/login' || req.path === '/auth/register') {
