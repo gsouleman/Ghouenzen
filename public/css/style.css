@@ -215,11 +215,38 @@ body {
     max-width: 700px;
 }
 
+/* Hero Buttons */
 .hero-buttons {
     display: flex;
     gap: 1rem;
     justify-content: flex-start;
     flex-wrap: wrap;
+    margin-top: 1rem;
+}
+
+.btn-hero {
+    font-size: 1.2rem;
+    padding: 1.2rem 2.5rem;
+    background: var(--primary);
+    color: white;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 800;
+    box-shadow: 0 4px 15px rgba(184, 0, 0, 0.3);
+    border-radius: 4px;
+    /* Slight rounding for modern feel */
+    transition: all 0.3s ease;
+    border: 2px solid var(--primary);
+}
+
+.btn-hero:hover {
+    background: #FF0000;
+    /* Brighter on hover */
+    color: white;
+    box-shadow: 0 6px 20px rgba(255, 0, 0, 0.4);
+    transform: translateY(-3px) scale(1.02);
+    text-decoration: none;
+    border-color: #FF0000;
 }
 
 /* Container & Sections */
