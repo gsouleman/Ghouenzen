@@ -737,6 +737,33 @@
                 navLinks.insertBefore(adminLink, navLinks.firstChild);
             }
         }
+
+        // Apply Islamic Heritage Setting
+        if (user.is_islamic === false) {
+            // Hide Tabs: Testator, Heirs, Executors, Inheritance
+            const tabsToHide = ['testator', 'heirs', 'executors', 'inheritance'];
+            tabsToHide.forEach(tabName => {
+                // Hide Tab Button
+                const btn = document.querySelector(`.tab[data-tab="${tabName}"]`);
+                if (btn) btn.style.display = 'none';
+
+                // Hide Panel (if active logic might need adjustment, but usually we click first available)
+                const panel = document.getElementById(`panel-${tabName}`);
+                if (panel) panel.style.display = 'none';
+            });
+
+            // Activate 'debtors' tab by default if current active tab is hidden
+            const activeTab = document.querySelector('.tab.active');
+            if (activeTab && tabsToHide.includes(activeTab.dataset.tab)) {
+                // Determine first visible tab (Debtors likely)
+                const debtorsTab = document.querySelector(`.tab[data-tab="debtors"]`);
+                if (debtorsTab) debtorsTab.click();
+            }
+
+            // Hide Will Document Button
+            const willBtns = document.querySelectorAll('a[href="/will"], a[href="/will.html"], button[onclick*="will"]');
+            willBtns.forEach(btn => btn.style.display = 'none');
+        }
     </script>
 </body>
 

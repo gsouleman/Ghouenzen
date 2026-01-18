@@ -62,6 +62,7 @@
                             <th>Full Name</th>
                             <th>Email</th>
                             <th>Role</th>
+                            <th>Islamic?</th>
                             <th>Created At</th>
                             <th>Actions</th>
                         </tr>
@@ -102,6 +103,10 @@
                         <option value="guest">Guest</option>
                     </select>
                 </div>
+                <div class="form-group" style="display: flex; align-items: center; gap: 0.5rem;">
+                    <input type="checkbox" id="is-islamic" checked style="width: auto;">
+                    <label for="is-islamic" style="margin-bottom: 0;">Apply Islamic Heritage?</label>
+                </div>
                 <div class="form-group" id="password-group">
                     <label>Password</label>
                     <input type="password" id="password" required>
@@ -134,9 +139,10 @@
                         <td>${user.full_name || '-'}</td>
                         <td>${user.email || '-'}</td>
                         <td><span style="padding: 2px 8px; background: ${getRoleColor(user.role)}; color: white; border-radius: 4px;">${user.role}</span></td>
+                        <td>${user.is_islamic !== false ? '✅' : '❌'}</td>
                         <td>${new Date(user.created_at).toLocaleDateString()}</td>
                         <td>
-                            <button class="action-btn edit" onclick="editUser(${user.id}, '${user.username}', '${user.full_name || ''}', '${user.email || ''}', '${user.role}')">Edit</button>
+                            <button class="action-btn edit" onclick="editUser(${user.id}, '${user.username}', '${user.full_name || ''}', '${user.email || ''}', '${user.role}', ${user.is_islamic !== false})">Edit</button>
                             <button class="action-btn" style="background:#555; color:white;" onclick="resetUserPassword(${user.id})">Reset PWD</button>
                             <button class="action-btn delete" onclick="deleteUser(${user.id})">Delete</button>
                         </td>
@@ -165,13 +171,14 @@
             document.getElementById('full-name').value = '';
             document.getElementById('email').value = '';
             document.getElementById('role').value = 'user';
+            document.getElementById('is-islamic').checked = true;
             document.getElementById('password').value = '';
             document.getElementById('password').required = true;
             document.getElementById('password-hint').style.display = 'none';
             document.getElementById('user-modal').style.display = 'flex';
         }
 
-        function editUser(id, username, fullName, email, role) {
+        function editUser(id, username, fullName, email, role, isIslamic) {
             document.getElementById('modal-title').textContent = 'Edit User';
             document.getElementById('user-id').value = id;
             document.getElementById('username').value = username;
@@ -179,6 +186,7 @@
             document.getElementById('full-name').value = fullName;
             document.getElementById('email').value = email;
             document.getElementById('role').value = role;
+            document.getElementById('is-islamic').checked = isIslamic;
             document.getElementById('password').value = '';
             document.getElementById('password').required = false; // Not required for edit
             document.getElementById('password-hint').style.display = 'block';
@@ -197,13 +205,14 @@
             const full_name = document.getElementById('full-name').value;
             const email = document.getElementById('email').value;
             const role = document.getElementById('role').value;
+            const is_islamic = document.getElementById('is-islamic').checked;
             const password = document.getElementById('password').value;
 
             try {
                 if (id) {
                     // Update
-                    await apiPut(`/api/users/${id}`, { full_name, email, role });
-                    // If password provided, reset it separately or handle in one go? 
+                    await apiPut(`/api/users/${id}`, { full_name, email, role, is_islamic });
+                    // If password provided, reset it separately or handle in one go?  
                     // My backend separated reset-password, but I can add it if needed.
                     // Actually, let's keep it simple. If checking update doesn't support password, then ignore it or warn.
                     // The backend PUT /api/users/:id only updates full_name and role.
@@ -214,7 +223,7 @@
                     showToast('User updated successfully');
                 } else {
                     // Create
-                    await apiPost('/api/users', { username, password, full_name, email, role });
+                    await apiPost('/api/users', { username, password, full_name, email, role, is_islamic });
                     showToast('User created successfully');
                 }
                 closeUserModal();

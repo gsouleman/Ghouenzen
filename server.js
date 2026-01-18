@@ -65,6 +65,9 @@ async function initDB() {
                     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='email') THEN 
                         ALTER TABLE users ADD COLUMN email VARCHAR(255); 
                     END IF;
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='is_islamic') THEN 
+                        ALTER TABLE users ADD COLUMN is_islamic BOOLEAN DEFAULT TRUE; 
+                    END IF;
                 END $$;
             `);
         } catch (alterErr) {
@@ -357,7 +360,7 @@ const authorizeRole = (...roles) => {
 // GET /api/users - List all users
 app.get('/api/users', authenticateToken, authorizeRole('admin'), async (req, res) => {
     try {
-        const result = await pool.query('SELECT id, username, full_name, email, role, created_at FROM users ORDER BY id ASC');
+        const result = await pool.query('SELECT id, username, full_name, email, role, is_islamic, created_at FROM users ORDER BY id ASC');
         res.json(result.rows);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -367,7 +370,7 @@ app.get('/api/users', authenticateToken, authorizeRole('admin'), async (req, res
 // POST /api/users - Create new user (Admin)
 app.post('/api/users', authenticateToken, authorizeRole('admin'), async (req, res) => {
     try {
-        const { username, password, full_name, email, role } = req.body;
+        const { username, password, full_name, email, role, is_islamic } = req.body;
         if (!username || !password) return res.status(400).json({ error: 'Username and password required' });
 
         const userExist = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
@@ -375,8 +378,8 @@ app.post('/api/users', authenticateToken, authorizeRole('admin'), async (req, re
 
         const hashedPassword = await bcrypt.hash(password, 10);
         const result = await pool.query(
-            'INSERT INTO users (username, password_hash, full_name, email, role) VALUES ($1, $2, $3, $4, $5) RETURNING id, username, full_name, email, role',
-            [username, hashedPassword, full_name || '', email || '', role || 'user']
+            'INSERT INTO users (username, password_hash, full_name, email, role, is_islamic) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, username, full_name, email, role, is_islamic',
+            [username, hashedPassword, full_name || '', email || '', role || 'user', is_islamic !== undefined ? is_islamic : true]
         );
         res.json(result.rows[0]);
     } catch (err) {
@@ -387,12 +390,12 @@ app.post('/api/users', authenticateToken, authorizeRole('admin'), async (req, re
 // PUT /api/users/:id - Update user (Admin)
 app.put('/api/users/:id', authenticateToken, authorizeRole('admin'), async (req, res) => {
     try {
-        const { full_name, email, role } = req.body;
+        const { full_name, email, role, is_islamic } = req.body;
         const userId = req.params.id;
 
         const result = await pool.query(
-            'UPDATE users SET full_name = $1, email = $2, role = $3 WHERE id = $4 RETURNING id, username, full_name, email, role',
-            [full_name, email, userId]
+            'UPDATE users SET full_name = $1, email = $2, role = $3, is_islamic = $4 WHERE id = $5 RETURNING id, username, full_name, email, role, is_islamic',
+            [full_name, email, role, is_islamic, userId]
         );
 
         if (result.rows.length === 0) return res.status(404).json({ error: 'User not found' });

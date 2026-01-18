@@ -185,6 +185,71 @@
                 adminLink.textContent = 'Admin Panel';
                 navLinks.insertBefore(adminLink, navLinks.firstChild);
             }
+
+            // Handle Non-Islamic User View
+            if (user.is_islamic === false) {
+                // 1. Hide Bismillah
+                const bismillah = document.querySelector('.bismillah');
+                if (bismillah) bismillah.style.display = 'none';
+
+                // 2. Hide Specific Feature Cards: Heirs Registry, Al-Faraid Calculator, Will Document
+                // Searching by text content since we don't have IDs
+                document.querySelectorAll('.feature-card').forEach(card => {
+                    const title = card.querySelector('h3').textContent;
+                    if (title.includes('Heirs Registry') ||
+                        title.includes('Al-Faraid Calculator') ||
+                        title.includes('Will Document')) {
+                        card.style.display = 'none';
+                    }
+                });
+
+                // 3. Hide Logo Icon (Crescent)
+                document.querySelectorAll('.logo-icon').forEach(icon => icon.style.display = 'none');
+
+                // 4. Hide Brand Name text "Al-Wasiyyah"
+                document.querySelectorAll('.logo-text').forEach(text => {
+                    if (text.textContent.includes('Al-Wasiyyah')) {
+                        // Replace or hide? Prompt says "hide ... Al-Wasiyyah".
+                        // But we put the user's name there. Let's just remove "Al-Wasiyyah" prefix.
+                        text.textContent = user.full_name || 'Estate Manager';
+                    }
+                });
+
+                // 5. Hide "Islamic Will & Estate Management" subtitle/brand text
+                // Found in <title>, footer, maybe nav?
+                // document.title = "Estate Management"; // Optional but nice
+                document.querySelectorAll('p, span').forEach(el => {
+                    if (el.textContent.includes('Islamic Will & Estate Management')) {
+                        el.style.display = 'none';
+                    }
+                });
+
+                // 6. Hide Disclaimer "This tool is for planning purposes only..."
+                document.querySelectorAll('.footer-note').forEach(el => el.style.display = 'none');
+
+                // 7. Hide Principles Section (Hadith, List, Calligraphy)
+                const principles = document.querySelector('.principles');
+                if (principles) principles.style.display = 'none';
+
+                // 8. Hide Steps 3 and 4 (Review Distribution, Generate Will)
+                document.querySelectorAll('.step').forEach(step => {
+                    const title = step.querySelector('h3').textContent;
+                    if (title.includes('Review Distribution') || title.includes('Generate Will')) {
+                        step.style.display = 'none';
+                        // Also hide the line following it? Hard to target nicely without IDs.
+                        // Let's just hide the step for now.
+                    }
+                });
+                // Clean up step lines if possible (advanced selector)
+                // Simplified: Just hide the step div.
+
+                // Professional Arrangement
+                // Centering remaining items in features grid
+                const grid = document.querySelector('.features-grid');
+                if (grid) {
+                    grid.style.justifyContent = 'center';
+                }
+            }
         });
     </script>
 </body>
