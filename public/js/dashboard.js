@@ -232,11 +232,14 @@ async function loadBeneficiaries() {
 
             if (b.allocation_type === 'residue') shareDisplay = 'Residue (Remaining Estate)';
 
+            const assetCount = b.asset_ids ? b.asset_ids.length : 0;
+            const assetBadge = assetCount > 0 ? `<br><span class="badge" style="font-size:0.8em; background:#eee; padding:2px 5px; border-radius:4px;">+ ${assetCount} Asset${assetCount > 1 ? 's' : ''}</span>` : '';
+
             return `
             <tr>
                 <td>${b.full_name}</td>
                 <td>${b.relationship || '-'}</td>
-                <td>${shareDisplay}</td>
+                <td>${shareDisplay}${assetBadge}</td>
                 <td>
                     <button class="action-btn edit" onclick='editBeneficiary(${JSON.stringify(b)})'>Edit</button>
                     <button class="action-btn delete" onclick="deleteItem('beneficiaries', ${b.id})">Delete</button>
