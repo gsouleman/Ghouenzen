@@ -214,7 +214,9 @@ async function loadAssets() {
         renderAssets('movable-tbody', assets.filter(a => a.category === 'movable'), 'movable-total');
         renderAssets('other-tbody', assets.filter(a => a.category === 'other'), 'other-total');
         document.getElementById('assets-grand-total').textContent = formatCurrency(assets.reduce((s, a) => s + a.estimated_value, 0));
-    } catch (err) { }
+    } catch (err) {
+        console.error('Error loading assets:', err);
+    }
 }
 
 async function loadBeneficiaries() {
