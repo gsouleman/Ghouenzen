@@ -440,11 +440,10 @@ function showModal(type, data = null) {
             </div>
 
             <div class="form-group">
-                <label>Linked Assets (Optional)</label>
-                <div id="f-asset-picker" class="checkbox-group" style="max-height: 150px; overflow-y: auto; border: 1px solid #ddd; padding: 10px;">
+                <label>Linked Assets (Hold Ctrl/Cmd to select multiple)</label>
+                <select id="f-asset-ids" multiple class="form-control" style="height: 120px; border: 1px solid #ddd; padding: 5px;">
                     <!-- Populated by JS -->
-                    <p style="color: #666; font-size: 0.9em;">No assets available.</p>
-                </div>
+                </select>
             </div>
             
             <div class="form-group"><label>Notes</label><textarea id="f-notes" rows="2"></textarea></div>
@@ -708,22 +707,26 @@ function fillForm(type, data) {
             document.getElementById('f-alloc-val').value = data.allocation_value || '';
             document.getElementById('f-notes').value = data.notes || '';
 
-            // Populate Asset Picker
-            const picker = document.getElementById('f-asset-picker');
-            if (assetsData.length > 0) {
-                picker.innerHTML = assetsData.map(a => {
-                    const isChecked = data.asset_ids && data.asset_ids.includes(a.id) ? 'checked' : '';
-                    return `
-                        <div class="checkbox-item" style="margin-bottom: 5px;">
-                            <input type="checkbox" id="asset-${a.id}" value="${a.id}" ${isChecked}>
-                            <label for="asset-${a.id}" style="display:inline; margin-left: 5px;">
-                                ${a.description} (${formatCurrency(a.estimated_value)})
-                            </label>
-                        </div>
-                    `;
-                }).join('');
-            } else {
-                picker.innerHTML = '<p style="color: #666; font-size: 0.9em;">No assets available (add assets first).</p>';
+            // Populate Asset Picker (Dropdown)
+            const picker = document.getElementById('f-asset-ids'); // Changed ID to match select
+            if (picker) {
+                picker.innerHTML = ''; // Clear existing
+                if (assetsData && assetsData.length > 0) {
+                    assetsData.forEach(a => {
+                        const option = document.createElement('option');
+                        option.value = a.id;
+                        option.textContent = `${a.description} (${formatCurrency(a.estimated_value)})`;
+                        if (data.asset_ids && data.asset_ids.includes(a.id)) {
+                            option.selected = true;
+                        }
+                        picker.appendChild(option);
+                    });
+                } else {
+                    const option = document.createElement('option');
+                    option.textContent = 'No assets available (add assets first)';
+                    option.disabled = true;
+                    picker.appendChild(option);
+                }
             }
 
             // Trigger change to update label
@@ -795,9 +798,9 @@ async function handleSubmit(e, type, id) {
             };
             break;
         case 'beneficiary':
-            // Collect checked assets
-            const selectedAssets = Array.from(document.querySelectorAll('#f-asset-picker input[type="checkbox"]:checked'))
-                .map(cb => parseInt(cb.value));
+            // Collect selected assets from dropdown
+            const selectEl = document.getElementById('f-asset-ids');
+            const selectedAssets = selectEl ? Array.from(selectEl.selectedOptions).map(opt => parseInt(opt.value)) : [];
 
             data = {
                 full_name: document.getElementById('f-name').value,
