@@ -210,13 +210,18 @@
                 document.querySelectorAll('.logo-icon').forEach(icon => icon.style.display = 'none');
 
                 // 4. Hide Brand Name text "Al-Wasiyyah" but keep user name if custom
-                document.querySelectorAll('.logo-text').forEach(text => {
-                    if (text.textContent.includes('Al-Wasiyyah')) {
-                        // Replace or hide? Prompt says "hide ... Al-Wasiyyah".
-                        // But we put the user's name there. Let's just remove "Al-Wasiyyah" prefix.
-                        text.textContent = user.full_name ? user.full_name : 'Estate Manager';
+
+                // Update NAVBAR logo text only
+                const navLogoText = document.querySelector('.navbar .logo-text');
+                if (navLogoText) {
+                    if (navLogoText.textContent.includes('Al-Wasiyyah')) {
+                        navLogoText.textContent = user.full_name ? user.full_name : 'Estate Manager';
                     }
-                });
+                }
+
+                // HIDE FOOTER logo text specifically
+                const footerLogoText = document.querySelector('.footer .logo-text');
+                if (footerLogoText) footerLogoText.style.display = 'none';
 
                 // 5. Hide "Islamic Will & Estate Management" subtitle/brand text
                 document.querySelectorAll('p, span, div').forEach(el => {
