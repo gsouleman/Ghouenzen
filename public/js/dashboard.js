@@ -722,6 +722,8 @@ function fillForm(type, data) {
                         </div>
                     `;
                 }).join('');
+            } else {
+                picker.innerHTML = '<p style="color: #666; font-size: 0.9em;">No assets available (add assets first).</p>';
             }
 
             // Trigger change to update label
