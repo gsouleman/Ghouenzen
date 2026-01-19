@@ -200,6 +200,10 @@
                         title.includes('Will Document')) {
                         card.style.display = 'none';
                     }
+                    if (title.includes('Net Estate Summary')) {
+                        const p = card.querySelector('p');
+                        if (p) p.textContent = 'Real-time calculation of assets, debts, and estate';
+                    }
                 });
 
                 // 3. Hide Logo Icon (Crescent) everywhere
@@ -207,8 +211,9 @@
 
                 // 4. Hide Brand Name text "Al-Wasiyyah" but keep user name if custom
                 document.querySelectorAll('.logo-text').forEach(text => {
-                    // We remove "Al-Wasiyyah" prefix if present
                     if (text.textContent.includes('Al-Wasiyyah')) {
+                        // Replace or hide? Prompt says "hide ... Al-Wasiyyah".
+                        // But we put the user's name there. Let's just remove "Al-Wasiyyah" prefix.
                         text.textContent = user.full_name ? user.full_name : 'Estate Manager';
                     }
                 });
@@ -219,8 +224,6 @@
                         el.style.display = 'none';
                     }
                 });
-
-                // Specific fix for footer brand subtitle which might be nested
                 const footerBrandP = document.querySelector('.footer-brand p');
                 if (footerBrandP) footerBrandP.style.display = 'none';
 
@@ -231,21 +234,20 @@
                 const principles = document.querySelector('.principles');
                 if (principles) principles.style.display = 'none';
 
-                // 8. Hide Steps 3 and 4 AND their preceding lines
-                const stepsContainer = document.querySelector('.steps');
-                if (stepsContainer) {
-                    const children = Array.from(stepsContainer.children);
-                    // Child indices (check inspect if possible, but assuming standard DOM): 
-                    // 0=Step1, 1=Line, 2=Step2, 3=Line, 4=Step3, 5=Line, 6=Step4
-                    // Hide 3, 4, 5, 6
-                    if (children.length >= 7) {
-                        children[3].style.display = 'none';
-                        children[4].style.display = 'none';
-                        children[5].style.display = 'none';
-                        children[6].style.display = 'none';
-                    }
-                    // Center the remaining steps
-                    stepsContainer.style.justifyContent = 'center';
+                // 8. Hide "How It Works" Section entirely
+                const howItWorks = document.querySelector('.how-it-works');
+                if (howItWorks) howItWorks.style.display = 'none';
+
+                // 9. Update Hero Subtitle
+                const heroSubtitle = document.querySelector('.hero-subtitle');
+                if (heroSubtitle) {
+                    heroSubtitle.textContent = 'Prepare your legacy with complete transparency and ease';
+                }
+
+                // 10. Hide features subtitle if it's the Islamic one
+                const featuresSubtitle = document.querySelector('.section-subtitle');
+                if (featuresSubtitle && featuresSubtitle.textContent.includes('Islamic will')) {
+                    featuresSubtitle.style.display = 'none';
                 }
 
                 // Professional Arrangement: Center Remaining Features
