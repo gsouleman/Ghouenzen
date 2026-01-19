@@ -768,30 +768,39 @@
         }
 
         // Apply Islamic Heritage Setting
+        // Apply Islamic Heritage Setting (Updated Logic)
         if (user.is_islamic === false) {
             // Hide Tabs: Testator, Heirs, Executors, Inheritance
-            const tabsToHide = ['testator', 'heirs', 'executors', 'inheritance'];
-            tabsToHide.forEach(tabName => {
-                // Hide Tab Button
+            ['testator', 'heirs', 'executors', 'inheritance'].forEach(tabName => {
                 const btn = document.querySelector(`.tab[data-tab="${tabName}"]`);
                 if (btn) btn.style.display = 'none';
-
-                // Hide Panel (if active logic might need adjustment, but usually we click first available)
-                const panel = document.getElementById(`panel-${tabName}`);
-                if (panel) panel.style.display = 'none';
+                // Hide Panel if active? Dashboard.js handles tab switching, but hiding button prevents access.
             });
 
-            // Activate 'debtors' tab by default if current active tab is hidden
-            const activeTab = document.querySelector('.tab.active');
-            if (activeTab && tabsToHide.includes(activeTab.dataset.tab)) {
-                // Determine first visible tab (Debtors likely)
-                const debtorsTab = document.querySelector(`.tab[data-tab="debtors"]`);
-                if (debtorsTab) debtorsTab.click();
-            }
+            // SHOW Beneficiary Tab
+            const beneficiaryTab = document.getElementById('tab-beneficiaries');
+            if (beneficiaryTab) beneficiaryTab.style.display = 'block';
+
+            // Hide "No testator registered" text
+            const testatorDisplay = document.getElementById('testator-display');
+            if (testatorDisplay) testatorDisplay.style.display = 'none';
 
             // Hide Will Document Button
-            const willBtns = document.querySelectorAll('a[href="/will"], a[href="/will.html"], button[onclick*="will"]');
-            willBtns.forEach(btn => btn.style.display = 'none');
+            const viewWillBtns = document.querySelectorAll('a[href="/will"], a[href="/will.html"], .btn-primary[href*="will"]');
+            viewWillBtns.forEach(btn => btn.style.display = 'none');
+
+            // Activate 'assets' or 'debtors' tab by default if current active tab is hidden
+            const activeTab = document.querySelector('.tab.active');
+            // If active tab is one of the hidden ones OR if it's "Testator" (default)
+            if (activeTab && (['testator', 'heirs', 'executors', 'inheritance'].includes(activeTab.dataset.tab) || activeTab.style.display === 'none')) {
+                // Determine first visible tab (Assets is a good secular default)
+                const assetsTab = document.querySelector('.tab[data-tab="assets"]');
+                if (assetsTab) assetsTab.click();
+            }
+        } else {
+            // Islamic User: Ensure Beneficiary Tab is HIDDEN
+            const beneficiaryTab = document.getElementById('tab-beneficiaries');
+            if (beneficiaryTab) beneficiaryTab.style.display = 'none';
         }
     </script>
 </body>
