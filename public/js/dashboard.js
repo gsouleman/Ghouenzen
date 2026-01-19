@@ -69,7 +69,10 @@ async function loadAllData() {
         await loadExecutors();
         await loadDebtors();
         await loadCreditors();
+        await loadDebtors();
+        await loadCreditors();
         await loadAssets();
+        await loadBeneficiaries();
     } catch (err) {
         console.log('No data yet - please load demo data or create a testator');
     }
@@ -209,6 +212,36 @@ async function loadAssets() {
         renderAssets('movable-tbody', assets.filter(a => a.category === 'movable'), 'movable-total');
         renderAssets('other-tbody', assets.filter(a => a.category === 'other'), 'other-total');
         document.getElementById('assets-grand-total').textContent = formatCurrency(assets.reduce((s, a) => s + a.estimated_value, 0));
+        document.getElementById('assets-grand-total').textContent = formatCurrency(assets.reduce((s, a) => s + a.estimated_value, 0));
+    } catch (err) { }
+}
+
+async function loadBeneficiaries() {
+    try {
+        const beneficiaries = await apiGet('/api/beneficiaries');
+        const tbody = document.getElementById('beneficiaries-tbody');
+        if (beneficiaries.length === 0) {
+            tbody.innerHTML = '<tr class="empty-row"><td colspan="4">No beneficiaries designated</td></tr>';
+            return;
+        }
+        tbody.innerHTML = beneficiaries.map(b => {
+            let shareDisplay = b.allocation_type === 'percentage'
+                ? `${b.allocation_value}%`
+                : formatCurrency(b.allocation_value);
+
+            if (b.allocation_type === 'residue') shareDisplay = 'Residue (Remaining Estate)';
+
+            return `
+            <tr>
+                <td>${b.full_name}</td>
+                <td>${b.relationship || '-'}</td>
+                <td>${shareDisplay}</td>
+                <td>
+                    <button class="action-btn edit" onclick='editBeneficiary(${JSON.stringify(b)})'>Edit</button>
+                    <button class="action-btn delete" onclick="deleteItem('beneficiaries', ${b.id})">Delete</button>
+                </td>
+            </tr>
+        `}).join('');
     } catch (err) { }
 }
 
@@ -384,6 +417,26 @@ function showModal(type, data = null) {
             <div class="form-group"><label>Estimated Value (XAF)</label><input type="number" id="f-value" required></div>
             <div class="form-group"><label>Notes</label><textarea id="f-notes" rows="2"></textarea></div>
             <button type="submit" class="btn btn-primary">${isEdit ? 'Update' : 'Add'} Asset</button>
+        </form>`,
+        beneficiary: `<form id="modal-form" class="form">
+            <div class="form-group"><label>Full Name</label><input type="text" id="f-name" required></div>
+            <div class="form-group"><label>Relationship</label><input type="text" id="f-relation" placeholder="e.g. Friend, Charity, Cousin"></div>
+            
+            <div class="form-group"><label>Allocation Type</label>
+                <select id="f-alloc-type" onchange="toggleAllocInput()">
+                    <option value="percentage">Percentage (%)</option>
+                    <option value="amount">Fixed Amount (XAF)</option>
+                    <option value="residue">Residue (Remainder)</option>
+                </select>
+            </div>
+
+            <div class="form-group" id="alloc-val-group">
+                <label id="l-alloc-val">Percentage Value (%)</label>
+                <input type="number" id="f-alloc-val" step="0.01">
+            </div>
+            
+            <div class="form-group"><label>Notes</label><textarea id="f-notes" rows="2"></textarea></div>
+            <button type="submit" class="btn btn-primary">${isEdit ? 'Update' : 'Add'} Beneficiary</button>
         </form>`,
         setupAssetListeners: () => {
             const cat = document.getElementById('f-category');
@@ -637,6 +690,35 @@ function fillForm(type, data) {
             }
             break;
     }
+    break;
+        case 'beneficiary':
+    document.getElementById('f-name').value = data.full_name;
+    document.getElementById('f-relation').value = data.relationship || '';
+    document.getElementById('f-alloc-type').value = data.allocation_type || 'percentage';
+    document.getElementById('f-alloc-val').value = data.allocation_value || '';
+    document.getElementById('f-notes').value = data.notes || '';
+    // Trigger change to update label
+    toggleAllocInput();
+    break;
+}
+}
+
+// Helper for beneficiary form
+function toggleAllocInput() {
+    const type = document.getElementById('f-alloc-type').value;
+    const group = document.getElementById('alloc-val-group');
+    const label = document.getElementById('l-alloc-val');
+
+    if (type === 'residue') {
+        group.style.display = 'none';
+    } else {
+        group.style.display = 'block';
+        if (type === 'percentage') {
+            label.textContent = 'Percentage Value (%)';
+        } else {
+            label.textContent = 'Amount (XAF)';
+        }
+    }
 }
 
 async function handleSubmit(e, type, id) {
@@ -683,6 +765,15 @@ async function handleSubmit(e, type, id) {
                 price_per_m2: parseFloat(document.getElementById('f-price-per-m2').value) || 0
             };
             break;
+        case 'beneficiary':
+            data = {
+                full_name: document.getElementById('f-name').value,
+                relationship: document.getElementById('f-relation').value,
+                allocation_type: document.getElementById('f-alloc-type').value,
+                allocation_value: parseFloat(document.getElementById('f-alloc-val').value) || 0,
+                notes: document.getElementById('f-notes').value
+            };
+            break;
     }
 
     try {
@@ -709,6 +800,7 @@ function editExecutor(e) { showModal('executor', e); }
 function editDebtor(d) { showModal('debtor', d); }
 function editCreditor(c) { showModal('creditor', c); }
 function editAsset(a) { showModal('asset', a); }
+function editBeneficiary(b) { showModal('beneficiary', b); }
 
 // Close modal on overlay click or Escape
 document.getElementById('modal-overlay').addEventListener('click', (e) => {
