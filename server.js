@@ -1153,3 +1153,60 @@ async function startServer() {
 }
 
 startServer();
+
+// ==========================================
+// BENEFICIARIES ROUTES (Secular)
+// ==========================================
+app.get('/api/beneficiaries', authenticateToken, async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM beneficiaries WHERE user_id = $1 ORDER BY created_at DESC', [req.user.id]);
+        res.json(result.rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+});
+
+app.post('/api/beneficiaries', authenticateToken, async (req, res) => {
+    const { full_name, relationship, allocation_type, allocation_value, notes } = req.body;
+    try {
+        const result = await pool.query(
+            `INSERT INTO beneficiaries (user_id, full_name, relationship, allocation_type, allocation_value, notes) 
+             VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+            [req.user.id, full_name, relationship, allocation_type || 'percentage', allocation_value, notes]
+        );
+        res.json(result.rows[0]);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+});
+
+app.put('/api/beneficiaries/:id', authenticateToken, async (req, res) => {
+    const { id } = req.params;
+    const { full_name, relationship, allocation_type, allocation_value, notes } = req.body;
+    try {
+        const result = await pool.query(
+            `UPDATE beneficiaries SET full_name = $1, relationship = $2, allocation_type = $3, allocation_value = $4, notes = $5 
+             WHERE id = $6 AND user_id = $7 RETURNING *`,
+            [full_name, relationship, allocation_type, allocation_value, notes, id, req.user.id]
+        );
+        if (result.rows.length === 0) return res.status(404).json({ msg: 'Beneficiary not found or unauthorized' });
+        res.json(result.rows[0]);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+});
+
+app.delete('/api/beneficiaries/:id', authenticateToken, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const result = await pool.query('DELETE FROM beneficiaries WHERE id = $1 AND user_id = $2 RETURNING *', [id, req.user.id]);
+        if (result.rows.length === 0) return res.status(404).json({ msg: 'Beneficiary not found or unauthorized' });
+        res.json({ msg: 'Beneficiary removed' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+});

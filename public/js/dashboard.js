@@ -689,18 +689,16 @@ function fillForm(type, data) {
                 liqCb.dispatchEvent(new Event('change'));
             }
             break;
-    }
-    break;
         case 'beneficiary':
-    document.getElementById('f-name').value = data.full_name;
-    document.getElementById('f-relation').value = data.relationship || '';
-    document.getElementById('f-alloc-type').value = data.allocation_type || 'percentage';
-    document.getElementById('f-alloc-val').value = data.allocation_value || '';
-    document.getElementById('f-notes').value = data.notes || '';
-    // Trigger change to update label
-    toggleAllocInput();
-    break;
-}
+            document.getElementById('f-name').value = data.full_name;
+            document.getElementById('f-relation').value = data.relationship || '';
+            document.getElementById('f-alloc-type').value = data.allocation_type || 'percentage';
+            document.getElementById('f-alloc-val').value = data.allocation_value || '';
+            document.getElementById('f-notes').value = data.notes || '';
+            // Trigger change to update label
+            setTimeout(() => toggleAllocInput(), 0);
+            break;
+    }
 }
 
 // Helper for beneficiary form
