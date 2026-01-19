@@ -334,12 +334,12 @@ app.post('/api/auth/login', async (req, res) => {
         }
 
         const token = jwt.sign(
-            { id: user.id, username: user.username, role: user.role, full_name: user.full_name },
+            { id: user.id, username: user.username, role: user.role, full_name: user.full_name, is_islamic: user.is_islamic },
             JWT_SECRET,
             { expiresIn: '24h' }
         );
 
-        res.json({ token, user: { id: user.id, username: user.username, full_name: user.full_name, role: user.role } });
+        res.json({ token, user: { id: user.id, username: user.username, full_name: user.full_name, role: user.role, is_islamic: user.is_islamic } });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
