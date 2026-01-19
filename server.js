@@ -219,6 +219,20 @@ async function initDB() {
             console.log('Column migration note:', alterErr.message);
         }
 
+        // Migration: Add asset_ids to beneficiaries if not exists
+        try {
+            await client.query(`
+                DO $$ 
+                BEGIN 
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='beneficiaries' AND column_name='asset_ids') THEN 
+                        ALTER TABLE beneficiaries ADD COLUMN asset_ids INTEGER[]; 
+                    END IF;
+                END $$;
+            `);
+        } catch (alterErr) {
+            console.log('Beneficiaries column migration note:', alterErr.message);
+        }
+
         await client.query(`
             CREATE TABLE IF NOT EXISTS will_edits (
                 id SERIAL PRIMARY KEY,
@@ -1168,12 +1182,12 @@ app.get('/api/beneficiaries', authenticateToken, async (req, res) => {
 });
 
 app.post('/api/beneficiaries', authenticateToken, async (req, res) => {
-    const { full_name, relationship, allocation_type, allocation_value, notes } = req.body;
+    const { full_name, relationship, allocation_type, allocation_value, notes, asset_ids } = req.body;
     try {
         const result = await pool.query(
-            `INSERT INTO beneficiaries (user_id, full_name, relationship, allocation_type, allocation_value, notes) 
-             VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-            [req.user.id, full_name, relationship, allocation_type || 'percentage', allocation_value, notes]
+            `INSERT INTO beneficiaries (user_id, full_name, relationship, allocation_type, allocation_value, notes, asset_ids) 
+             VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+            [req.user.id, full_name, relationship, allocation_type || 'percentage', allocation_value, notes, asset_ids || []]
         );
         res.json(result.rows[0]);
     } catch (err) {
@@ -1184,12 +1198,12 @@ app.post('/api/beneficiaries', authenticateToken, async (req, res) => {
 
 app.put('/api/beneficiaries/:id', authenticateToken, async (req, res) => {
     const { id } = req.params;
-    const { full_name, relationship, allocation_type, allocation_value, notes } = req.body;
+    const { full_name, relationship, allocation_type, allocation_value, notes, asset_ids } = req.body;
     try {
         const result = await pool.query(
-            `UPDATE beneficiaries SET full_name = $1, relationship = $2, allocation_type = $3, allocation_value = $4, notes = $5 
-             WHERE id = $6 AND user_id = $7 RETURNING *`,
-            [full_name, relationship, allocation_type, allocation_value, notes, id, req.user.id]
+            `UPDATE beneficiaries SET full_name = $1, relationship = $2, allocation_type = $3, allocation_value = $4, notes = $5, asset_ids = $6 
+             WHERE id = $7 AND user_id = $8 RETURNING *`,
+            [full_name, relationship, allocation_type, allocation_value, notes, asset_ids || [], id, req.user.id]
         );
         if (result.rows.length === 0) return res.status(404).json({ msg: 'Beneficiary not found or unauthorized' });
         res.json(result.rows[0]);

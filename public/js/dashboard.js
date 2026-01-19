@@ -4,6 +4,7 @@ let testatorId = null;
 let testatorData = {};
 let creditorsData = [];
 let debtorsData = [];
+let assetsData = [];
 
 document.addEventListener('DOMContentLoaded', () => {
     initTabs();
@@ -208,10 +209,10 @@ async function loadCreditors() {
 async function loadAssets() {
     try {
         const assets = await apiGet('/api/assets');
+        assetsData = assets;
         renderAssets('immovable-tbody', assets.filter(a => a.category === 'immovable'), 'immovable-total');
         renderAssets('movable-tbody', assets.filter(a => a.category === 'movable'), 'movable-total');
         renderAssets('other-tbody', assets.filter(a => a.category === 'other'), 'other-total');
-        document.getElementById('assets-grand-total').textContent = formatCurrency(assets.reduce((s, a) => s + a.estimated_value, 0));
         document.getElementById('assets-grand-total').textContent = formatCurrency(assets.reduce((s, a) => s + a.estimated_value, 0));
     } catch (err) { }
 }
@@ -433,6 +434,14 @@ function showModal(type, data = null) {
             <div class="form-group" id="alloc-val-group">
                 <label id="l-alloc-val">Percentage Value (%)</label>
                 <input type="number" id="f-alloc-val" step="0.01">
+            </div>
+
+            <div class="form-group">
+                <label>Linked Assets (Optional)</label>
+                <div id="f-asset-picker" class="checkbox-group" style="max-height: 150px; overflow-y: auto; border: 1px solid #ddd; padding: 10px;">
+                    <!-- Populated by JS -->
+                    <p style="color: #666; font-size: 0.9em;">No assets available.</p>
+                </div>
             </div>
             
             <div class="form-group"><label>Notes</label><textarea id="f-notes" rows="2"></textarea></div>
@@ -695,6 +704,23 @@ function fillForm(type, data) {
             document.getElementById('f-alloc-type').value = data.allocation_type || 'percentage';
             document.getElementById('f-alloc-val').value = data.allocation_value || '';
             document.getElementById('f-notes').value = data.notes || '';
+
+            // Populate Asset Picker
+            const picker = document.getElementById('f-asset-picker');
+            if (assetsData.length > 0) {
+                picker.innerHTML = assetsData.map(a => {
+                    const isChecked = data.asset_ids && data.asset_ids.includes(a.id) ? 'checked' : '';
+                    return `
+                        <div class="checkbox-item" style="margin-bottom: 5px;">
+                            <input type="checkbox" id="asset-${a.id}" value="${a.id}" ${isChecked}>
+                            <label for="asset-${a.id}" style="display:inline; margin-left: 5px;">
+                                ${a.description} (${formatCurrency(a.estimated_value)})
+                            </label>
+                        </div>
+                    `;
+                }).join('');
+            }
+
             // Trigger change to update label
             setTimeout(() => toggleAllocInput(), 0);
             break;
@@ -764,11 +790,16 @@ async function handleSubmit(e, type, id) {
             };
             break;
         case 'beneficiary':
+            // Collect checked assets
+            const selectedAssets = Array.from(document.querySelectorAll('#f-asset-picker input[type="checkbox"]:checked'))
+                .map(cb => parseInt(cb.value));
+
             data = {
                 full_name: document.getElementById('f-name').value,
                 relationship: document.getElementById('f-relation').value,
                 allocation_type: document.getElementById('f-alloc-type').value,
                 allocation_value: parseFloat(document.getElementById('f-alloc-val').value) || 0,
+                asset_ids: selectedAssets,
                 notes: document.getElementById('f-notes').value
             };
             break;
