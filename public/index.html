@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Al-Wasiyyah | Islamic Will & Estate Management</title>
+    <title>Al-Wasiyyah | Estate Management System</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
@@ -16,6 +16,41 @@
             window.location.replace('/login.html');
         }
     </script>
+    <style>
+        /* Inline styles for new secular sections to avoid css caching issues/complex refactors */
+        .secular-principles {
+            padding: 5rem 0;
+            background: #f9f9f9;
+        }
+
+        .secular-process {
+            padding: 5rem 0;
+        }
+
+        .secular-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+        }
+
+        .process-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            max-width: 1000px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+
+            .secular-grid,
+            .process-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 
 <body>
@@ -89,6 +124,7 @@
         </div>
     </section>
 
+    <!-- Original How It Works (Islamic) -->
     <section class="how-it-works">
         <div class="container">
             <h2 class="section-title">How It Works</h2>
@@ -120,6 +156,36 @@
         </div>
     </section>
 
+    <!-- NEW Process Overview (Secular) - Hidden by default -->
+    <section class="secular-process" style="display: none;">
+        <div class="container">
+            <h2 class="section-title" style="text-align: center;">Streamlined Estate Management</h2>
+            <p class="section-subtitle" style="text-align: center; margin-bottom: 3rem;">A professional approach to
+                organizing your life's work</p>
+            <div class="process-grid">
+                <div>
+                    <div style="font-size: 3rem; margin-bottom: 1rem; color: var(--primary);">01</div>
+                    <h3 style="font-size: 1.2rem; margin-bottom: 0.5rem; font-weight: 700;">Comprehensive Inventory</h3>
+                    <p style="color: #666;">Catalog every asset and liability with precision, establishing a clear net
+                        worth baseline for your estate.</p>
+                </div>
+                <div>
+                    <div style="font-size: 3rem; margin-bottom: 1rem; color: var(--primary);">02</div>
+                    <h3 style="font-size: 1.2rem; margin-bottom: 0.5rem; font-weight: 700;">Beneficiary Designation</h3>
+                    <p style="color: #666;">Clearly define heir relationships and intended distributions to prevent
+                        future disputes and ensure clarity.</p>
+                </div>
+                <div>
+                    <div style="font-size: 3rem; margin-bottom: 1rem; color: var(--primary);">03</div>
+                    <h3 style="font-size: 1.2rem; margin-bottom: 0.5rem; font-weight: 700;">Legacy Generation</h3>
+                    <p style="color: #666;">Automatically generate professional summaries and legal-ready documents
+                        reflecting your current estate status.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Original Principles (Islamic) -->
     <section class="principles">
         <div class="container">
             <div class="principles-grid">
@@ -141,6 +207,43 @@
                 <div class="principles-art">
                     <div class="calligraphy">الوصية</div>
                     <span>Al-Wasiyyah</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- NEW Principles (Secular) - Hidden by default -->
+    <section class="secular-principles" style="display: none;">
+        <div class="container">
+            <h2 class="section-title" style="text-align: center; margin-bottom: 2rem;">Secure Your Financial Legacy</h2>
+            <div class="secular-grid">
+                <div class="principles-text">
+                    <h3 style="font-size: 1.8rem; margin-bottom: 1.5rem; color: var(--primary);">Why Estate Planning
+                        Matters</h3>
+                    <p style="margin-bottom: 1.5rem; line-height: 1.8; color: #555;">
+                        Effective estate planning is about more than just distributing assets; it's about providing
+                        clarity and security for your loved ones. By organizing your financial life today, you ensure
+                        that your hard-earned legacy is preserved and your wishes are honored without ambiguity.
+                    </p>
+                    <p style="line-height: 1.8; color: #555;">
+                        Our system provides a professional framework to track every aspect of your estate, from real
+                        estate holdings and liquid assets to outstanding liabilities. This comprehensive approach
+                        eliminates guesswork and simplifies the complex process of estate administration.
+                    </p>
+                </div>
+                <div class="principles-features">
+                    <div style="margin-bottom: 2rem;">
+                        <h4 style="font-size: 1.3rem; margin-bottom: 0.5rem; font-weight: 700; color: #333;">🛡️ Asset
+                            Protection</h4>
+                        <p style="color: #666;">Safeguard your wealth by maintaining an up-to-date registry of all
+                            property and financial instruments.</p>
+                    </div>
+                    <div>
+                        <h4 style="font-size: 1.3rem; margin-bottom: 0.5rem; font-weight: 700; color: #333;">🕊️ Peace
+                            of Mind</h4>
+                        <p style="color: #666;">Live with the confidence that your financial affairs are in perfect
+                            order and accessible to those you trust.</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -235,13 +338,19 @@
                 // 6. Hide Disclaimer "This tool is for planning purposes only..."
                 document.querySelectorAll('.footer-note').forEach(el => el.style.display = 'none');
 
-                // 7. Hide Principles Section (Hadith, List, Calligraphy)
+                // 7. Hide Principles Section (Hadith, List, Calligraphy) -> SHOW SECULAR
                 const principles = document.querySelector('.principles');
                 if (principles) principles.style.display = 'none';
 
-                // 8. Hide "How It Works" Section entirely
+                const secularPrinciples = document.querySelector('.secular-principles');
+                if (secularPrinciples) secularPrinciples.style.display = 'block';
+
+                // 8. Hide "How It Works" Section -> SHOW SECULAR PROCESS
                 const howItWorks = document.querySelector('.how-it-works');
                 if (howItWorks) howItWorks.style.display = 'none';
+
+                const secularProcess = document.querySelector('.secular-process');
+                if (secularProcess) secularProcess.style.display = 'block';
 
                 // 9. Update Hero Subtitle
                 const heroSubtitle = document.querySelector('.hero-subtitle');
