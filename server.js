@@ -805,9 +805,17 @@ app.delete('/api/creditors/:id', async (req, res) => {
 // Assets
 app.get('/api/assets', async (req, res) => {
     try {
-        const testator = await getTestatorForUser(req.user.id);
-        if (!testator) return res.json([]);
-        const result = await pool.query('SELECT * FROM assets WHERE testator_id = $1 ORDER BY id', [testator.id]);
+        let result;
+        if (req.user.role === 'admin') {
+            // Admin sees ALL assets
+            result = await pool.query('SELECT * FROM assets ORDER BY id');
+        } else {
+            // Regular user only sees own assets
+            const testator = await getTestatorForUser(req.user.id);
+            if (!testator) return res.json([]);
+            result = await pool.query('SELECT * FROM assets WHERE testator_id = $1 ORDER BY id', [testator.id]);
+        }
+
         res.json(result.rows.map(r => ({
             ...r,
             estimated_value: parseFloat(r.estimated_value) || 0,
