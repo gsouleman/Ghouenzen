@@ -209,6 +209,7 @@ async function loadCreditors() {
 async function loadAssets() {
     try {
         const assets = await apiGet('/api/assets');
+        console.log('loadAssets: Fetched', assets.length, 'assets');
         assetsData = assets;
         renderAssets('immovable-tbody', assets.filter(a => a.category === 'immovable'), 'immovable-total');
         renderAssets('movable-tbody', assets.filter(a => a.category === 'movable'), 'movable-total');
@@ -572,6 +573,33 @@ function showModal(type, data = null) {
         setTimeout(forms.setupAssetListeners, 100);
     }
 
+    // Populate Beneficiary Assets (Dropdown)
+    if (type === 'beneficiary') {
+        const picker = document.getElementById('f-asset-ids');
+        console.log('showModal: Opening beneficiary modal. Asset count:', assetsData ? assetsData.length : 'null');
+
+        if (picker) {
+            picker.innerHTML = '';
+            if (assetsData && assetsData.length > 0) {
+                assetsData.forEach(a => {
+                    const option = document.createElement('option');
+                    option.value = a.id;
+                    option.textContent = `${a.description} (${formatCurrency(a.estimated_value)})`;
+                    picker.appendChild(option);
+                });
+                console.log('showModal: Populated', assetsData.length, 'assets into dropdown.');
+            } else {
+                const option = document.createElement('option');
+                option.textContent = 'No assets available (add assets first)';
+                option.disabled = true;
+                picker.appendChild(option);
+                console.log('showModal: No assets to populate.');
+            }
+        } else {
+            console.error('showModal: Asset picker element #f-asset-ids NOT found in DOM.');
+        }
+    }
+
     document.getElementById('modal-form').onsubmit = (e) => handleSubmit(e, type, data?.id);
 }
 
@@ -709,26 +737,14 @@ function fillForm(type, data) {
             document.getElementById('f-alloc-val').value = data.allocation_value || '';
             document.getElementById('f-notes').value = data.notes || '';
 
-            // Populate Asset Picker (Dropdown)
-            const picker = document.getElementById('f-asset-ids'); // Changed ID to match select
-            if (picker) {
-                picker.innerHTML = ''; // Clear existing
-                if (assetsData && assetsData.length > 0) {
-                    assetsData.forEach(a => {
-                        const option = document.createElement('option');
-                        option.value = a.id;
-                        option.textContent = `${a.description} (${formatCurrency(a.estimated_value)})`;
-                        if (data.asset_ids && data.asset_ids.includes(a.id)) {
-                            option.selected = true;
-                        }
-                        picker.appendChild(option);
-                    });
-                } else {
-                    const option = document.createElement('option');
-                    option.textContent = 'No assets available (add assets first)';
-                    option.disabled = true;
-                    picker.appendChild(option);
-                }
+            // Select linked assets
+            const picker = document.getElementById('f-asset-ids');
+            if (picker && data.asset_ids) {
+                Array.from(picker.options).forEach(opt => {
+                    if (data.asset_ids.includes(parseInt(opt.value))) {
+                        opt.selected = true;
+                    }
+                });
             }
 
             // Trigger change to update label
