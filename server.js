@@ -805,9 +805,17 @@ app.delete('/api/creditors/:id', async (req, res) => {
 // Assets
 app.get('/api/assets', async (req, res) => {
     try {
-        const testator = await getTestatorForUser(req.user.id);
-        if (!testator) return res.json([]);
-        const result = await pool.query('SELECT * FROM assets WHERE testator_id = $1 ORDER BY id', [testator.id]);
+        let result;
+        if (req.user.role === 'admin') {
+            // Admin sees ALL assets
+            result = await pool.query('SELECT * FROM assets ORDER BY id');
+        } else {
+            // Regular user only sees own assets
+            const testator = await getTestatorForUser(req.user.id);
+            if (!testator) return res.json([]);
+            result = await pool.query('SELECT * FROM assets WHERE testator_id = $1 ORDER BY id', [testator.id]);
+        }
+
         res.json(result.rows.map(r => ({
             ...r,
             estimated_value: parseFloat(r.estimated_value) || 0,
@@ -822,8 +830,17 @@ app.get('/api/assets', async (req, res) => {
 
 app.post('/api/assets', async (req, res) => {
     try {
-        const testator = await getTestatorForUser(req.user.id);
-        if (!testator) return res.status(400).json({ error: 'No testator' });
+        let testator = await getTestatorForUser(req.user.id);
+
+        // Auto-create testator if it doesn't exist
+        if (!testator) {
+            const testatorResult = await pool.query(
+                'INSERT INTO testator (user_id, full_name, address) VALUES ($1, $2, $3) RETURNING *',
+                [req.user.id, req.user.full_name || req.user.username, '']
+            );
+            testator = testatorResult.rows[0];
+        }
+
         const { category, description, location, estimated_value, notes, is_liquidated, total_area, area_to_sell, price_per_m2 } = req.body;
         const result = await pool.query(
             'INSERT INTO assets (testator_id, category, description, location, estimated_value, notes, is_liquidated, total_area, area_to_sell, price_per_m2) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id',
